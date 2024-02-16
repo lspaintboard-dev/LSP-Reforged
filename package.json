@@ -1,0 +1,28 @@
+{
+  "name": "lsp-reforged",
+  "version": "1.0.0",
+  "description": "lspaintboard-reforged version!",
+  "main": "src/lsp-reforged/lsp-reforged.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lspaintboard-dev/LSP-Reforged.git"
+  },
+  "author": "liucang",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/lspaintboard-dev/LSP-Reforged/issues"
+  },
+  "homepage": "https://github.com/lspaintboard-dev/LSP-Reforged#readme",
+  "dependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.11.17",
+    "fs-extra": "^11.2.0",
+    "js-yaml": "^4.1.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3"
+  }
+}
