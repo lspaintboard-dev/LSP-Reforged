@@ -22,7 +22,7 @@ export class Server {
     constructor(config: Config, db: DBService) {
         this.bus = new EventEmitter();
         this.config = config;
-        this.logger = new utils.Logger(config.getConfig("logging.logLevel"), config.getConfig("logging.logIntoConsole"), config.getConfig("logging.logIntoFile"), config.getConfig('global.workspace') + config.getConfig('logging.logPath'));
+        this.logger = new utils.Logger(config.getConfig("logging.logLevel"), config.getConfig("logging.logIntoConsole"), config.getConfig("logging.logIntoFile"), config.getConfig('logging.logPath').replaceAll('${WORKSPACE}', config.getConfig('global.workspace')));
         this.services = new Map<string, Service>();
         this.db = db;
         this.permissionService = new PermissionService();

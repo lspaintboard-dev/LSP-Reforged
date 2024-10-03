@@ -2,7 +2,7 @@ logging:
   logLevel: 0
   logIntoConsole: true
   logIntoFile: true
-  logPath: '/logs'
+  logPath: '${WORKSPACE}/logs'
 global:
   workspace: '/Volumes/School/LSP-reforged'
   defaultLanguage: 'zh_cn'
