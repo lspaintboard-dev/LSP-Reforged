@@ -1,0 +1,427 @@
+<!doctype html>
+<html class="no-js">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1 user-scalable=no">
+    <title>LS Paintboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/amazeui@2/dist/css/amazeui.min.css">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"
+            integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-ui-dist@1/jquery-ui.min.js"></script>
+    <style>
+        .about {
+            background: #fff;
+            padding: 40px 0;
+            color: #7f8c8d;
+        }
+
+        .about-color {
+            color: #34495e;
+        }
+
+        .about-title {
+            font-size: 180%;
+            padding: 30px 0 50px 0;
+            text-align: center;
+        }
+
+        .footer p {
+            color: #7f8c8d;
+            margin: 0;
+            padding: 15px 0;
+            text-align: center;
+            background: #2d3e50;
+        }
+
+        #palette {
+            padding: 10px;
+            background: #7f7f7f;
+            margin: 10px;
+            width: auto;
+            color: #fff;
+        }
+
+        .selected {
+            border: #DAA520 3px solid;
+        }
+
+        #canvas-box {
+            width: calc(1000px + 30px);
+            height: calc(600px + 30px);
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+<header class="am-topbar am-topbar-fixed-top">
+    <div class="am-container">
+        <h1 class="am-topbar-brand">
+            <a href="#">LS 冬日绘板</a>
+        </h1>
+        <button class="am-topbar-btn am-topbar-toggle am-btn am-btn-sm am-btn-secondary am-show-sm-only"
+                data-am-collapse="{target: '#collapse-head'}"><span class="am-sr-only">导航切换</span> <span
+                class="am-icon-bars"></span></button>
+        <div class="am-collapse am-topbar-collapse" id="collapse-head">
+            <ul class="am-nav am-nav-pills am-topbar-nav">
+            </ul>
+        </div>
+    </div>
+</header>
+<div class="about">
+    <div class="am-g am-container">
+        <div class="am-u-lg-12">
+            <h2 id="title" class="about-title about-color">Loading...</h2>
+            <div class="am-g">
+                <div class="am-u-lg-11" id="canvas-box">
+                    <canvas width=5000 height=3000 id='mycanvas'>
+                    </canvas>
+                </div>
+                <div class="am-u-lg-7" id='palette'><span>选色</span><input type="color" id="select-color"></div>
+                <div class="am-u-lg-5" id='zoom-tool'>
+                    <button type="button" class="am-btn am-btn-primary am-radius" zoom=1>全部显示</button>
+                    <button type="button" class="am-btn am-btn-secondary am-radius" zoom=5>放大5x</button>
+                    <button type="button" class="am-btn am-btn-success am-radius" zoom=10>放大10x</button>
+                    <div style="display: inline-flex;margin: 1em 0; width: 100%;">
+                        <input type="number"
+                               style="height:37.1593px; font-family: monospace; flex: 1; font-size: .875em;"
+                               placeholder="LuoguUid" id="uid">
+                        &nbsp;&nbsp;<input type="text"
+                                           style="height:37.1593px; font-family: monospace; flex: 1; font-size: .875em;"
+                                           placeholder="LuoguPaste" id="paste">
+                        &nbsp;&nbsp;<input type="text" style="font-family: monospace; flex: 1; font-size: .875em;"
+                                           placeholder="Token" id="token">
+                        <button type="button" class="am-btn am-btn-danger am-radius"
+                                id="reset-token">更新Token</button>
+                    </div>
+                    <p>
+                        还剩 <span id='timeleft' class="am-badge am-badge-secondary"></span>
+                    </p>
+                </div>
+                <div class="am-u-lg-12">
+                    <p>
+                        活动时间: <span id="activity-time-start"></span> ~ <span id="activity-time-end"></span> <span
+                            id="activity-reminder"></span><br>
+                        活动规则: 未被禁言、已认证手机、注册时间在 2023/12/01 前的洛谷用户可参与。每个用户 30 秒可涂鸦一个点，可随意覆盖任何区域。<br>
+                        参与方式: 在 LuoguUid 中输入您的洛谷 uid, 新建一个剪贴板并<b>只输入</b> LSPaintBoard 后公开保存。将您的剪贴板
+                        Url 中最后一串八位字符输入到 LuoguPaste 中后点击获取 Token。如果以后您想绘画输入 Token 与 uid 即可。当您绘画时会自动保存您的 uid 及 Token 至浏览器。
+                    </p>
+                    <p>禁止绘制违反法律、社会公德的图形，否则将被清除且上报网警。请大家组团时不要分享自己的 cookie，而是使用分享 Token 这种更安全的方式。分享 cookie
+                        等同于分享账号，他人可以使用您的 cookie 在洛谷以您的名义进行任何操作。</p>
+                    <p>本页面部分来源于<a href="https://www.luogu.com.cn/paintboard" target="_blank">官方绘板页面</a>。</p>
+                    <p>liucang 粉丝是我给它刷的，它是个傻逼，给它刷点粉。 ——吕泽楷</p>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    H = 600;
+    W = 1000;
+    scale = 5;
+    dragged = 0;
+    lasttime = 0;
+    timelimit = 3000 / 1000;
+    activityStartTime = 0;
+    activityEndTime = 1145141919810;
+    nowintevel = 0;
+    nowColor = "#000000";
+    nowX = 0;
+    nowY = 0;
+
+    var myarr = [];
+    for (var i = 0; i < H; i++) {
+        myarr[i] = [];
+        for (var j = 0; j < W; j++) {
+            myarr[i][j] = '#dddddd';
+        }
+    }
+
+    function render(arr) {
+        var c = document.getElementById("mycanvas");
+        var ctx = c.getContext("2d");
+        for (var i = 0; i < H; i++) {
+            for (var j = 0; j < W; j++) {
+                ctx.fillStyle = arr[i][j];
+                ctx.fillRect(j * scale, i * scale, scale, scale);
+            }
+        }
+
+    }
+
+    function update(y, x, color, t = false) {
+        if (dragged) {
+            dragged = 0;
+            return;
+        }
+        //alert('ss');
+        var c = document.getElementById("mycanvas");
+        var ctx = c.getContext("2d");
+        ctx.fillStyle = color;
+        if(!t) myarr[y][x] = color;
+        ctx.fillRect(x * 5, y * 5, 5, 5);
+    }
+
+    zoom = function (s) {
+        scale = s;
+        $('#mycanvas').width(W * scale)
+        if (s == 1) {
+            $('#mycanvas').css('top', 0);
+            $('#mycanvas').css('left', 0);
+        }
+    }
+    $("[zoom]").click(function () {
+        zoom($(this).attr('zoom'));
+    });
+    $('#select-color').bind("change", (evt) => {
+        nowColor = evt.currentTarget.value;
+    })
+    // myarr[10][10] = '#6600ff';
+    // myarr[100][200] = '#66ccff';
+    render(myarr);
+    $('[data-cid=0]').addClass("selected");
+    $('#mycanvas').bind("click", function () {
+        //alert(event.offsetY);
+        if(document.getElementById('uid').value==null||document.getElementById('token').value==null||document.getElementById('token').value==""){
+            alert("请填写令牌信息");
+            return;
+        }
+
+        if (new Date() < (lasttime + timelimit) * 1000) {
+            alert("冷却时间未到，暂时不能涂色");
+            return;
+        }
+        localStorage.setItem('token',document.getElementById('token').value)
+        localStorage.setItem('uid',document.getElementById('uid').value.toString())
+        $.ajax({
+            type: 'POST',
+            url: 'http://127.0.0.1:25566/api/paintboard/paint',
+            data: JSON.stringify({
+                x: nowX,
+                y: nowY,
+                color: parseInt(nowColor.slice(1,7), 16),
+                uid: parseInt(document.getElementById('uid').value),
+                token: document.getElementById('token').value
+            }),
+            complete: (resp) => {
+                resp = resp.responseJSON;
+                if (resp.statusCode != 200) {
+                    console.log(resp);
+                    alert(`${resp.data.errorType}${resp.data.message?': '+resp.data.message:''}`);
+                } else {
+                    lasttime = (new Date()) / 1000;
+                    getCountDown(lasttime + timelimit);
+                }
+            },
+            contentType: "application/json"
+        });
+    })
+    $('#mycanvas').bind('mousemove', function() {
+        var x = parseInt(event.offsetX / scale);
+        var y = parseInt(event.offsetY / scale);
+
+        x = Math.min(x, W-1);
+        y = Math.min(y, H-1);
+
+        if(nowX != x || nowY != y) {
+            update(y, x, nowColor, true);
+            update(nowY, nowX, myarr[nowY][nowX]);
+            nowY = y;
+            nowX = x;
+        }
+    })
+    $('#reset-token').bind("click", function () {
+        $.ajax({
+            type: 'POST',
+            url: 'http://127.0.0.1:25566/api/auth/gettoken',
+            data: JSON.stringify({
+                uid: document.getElementById('uid').value.toString(),
+                paste: document.getElementById('paste').value
+            }),
+            complete: (resp) => {
+                resp = resp.responseJSON;
+                if (resp.statusCode != 200) {
+                    console.log(resp);
+                    alert(`${resp.data.errorType}${resp.data.message?': '+resp.data.message:''}`);
+                } else {
+                    document.getElementById('token').value = resp.data.token;
+                }
+            },
+            contentType: "application/json"
+        });
+    });
+    $('#mycanvas').draggable({
+        cursor: "move",
+        stop: function () {
+            dragged = 1;
+        }
+    });
+    $('#mycanvas').bind("mousewheel", function (event) {
+        var delta = event.originalEvent.deltaY;
+        var y = parseInt(event.offsetY / scale);
+        var x = parseInt(event.offsetX / scale);
+        console.log(event);
+        if (delta > 0) {
+            if (scale == 10)
+                zoom(5);
+            else if (scale == 5)
+                zoom(1);
+        } else {
+            if (scale == 1)
+                zoom(5);
+            else if (scale == 5)
+                zoom(10);
+        }
+        if (scale != 1) {
+            $('#mycanvas').css('top', -y * scale + H / 2);
+            $('#mycanvas').css('left', -x * scale + W / 2);
+        }
+        scale
+        return false;
+    });
+
+    function getCountDown(timestamp) {
+        clearInterval(nowintevel);
+        nowintevel = setInterval(function () {
+            var nowTime = new Date();
+            var endTime = new Date(timestamp * 1000);
+            var t = endTime.getTime() - nowTime.getTime();
+            if (t < 0) {
+                $("#timeleft").html("冷却时间到");
+                clearInterval(nowintevel);
+                return;
+            }
+            var hour = Math.floor(t / 1000 / 60 / 60 % 24);
+            var min = Math.floor(t / 1000 / 60 % 60);
+            var sec = Math.floor(t / 1000 % 60);
+            if (hour < 10)
+                hour = "0" + hour;
+            if (min < 10)
+                min = "0" + min;
+            if (sec < 10)
+                sec = "0" + sec;
+            var countDownTime = hour + ":" + min + ":" + sec;
+            $("#timeleft").html(countDownTime);
+        }, 1000);
+    }
+
+    function getDateTime(timestamp, isRangeEnd) {
+        var d = new Date(timestamp * 1000);
+        var is2400 = false;
+        if (isRangeEnd && d.getHours() === 0 && d.getMinutes() === 0) {
+            d.setHours(-24)
+            is2400 = true;
+        }
+        var s = String(d.getFullYear()) + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0') + ' ';
+        s += is2400 ? '24:00' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        return s;
+    }
+
+    function getFormattedTime(timestamp) {
+        var str = '';
+        var d = Math.floor(timestamp / 86400);
+        if (d !== 0 || str.length > 0) str += d + '天';
+        var h = Math.floor(timestamp / 3600) % 24;
+        if (h !== 0 || str.length > 0) str += String(h).padStart(2, '0') + '时';
+        var m = Math.floor(timestamp / 60) % 60;
+        if (m !== 0 || str.length > 0) str += String(m).padStart(2, '0') + '分';
+        var s = Math.floor(timestamp) % 60;
+        str += String(s).padStart(2, '0') + '秒';
+        return str;
+    }
+
+    getCountDown(lasttime + timelimit);
+
+    function initialPaint() {
+        console.log(0)
+        var oReq = new XMLHttpRequest();
+        oReq.open("GET", "http://127.0.0.1:25566/api/paintboard/getboard");
+        oReq.responseType = "arraybuffer";
+
+        oReq.onload = function (oEvent) {
+            const arrayBuffer = oReq.response;
+            if (arrayBuffer) {
+                const byteArray = new Uint8Array(arrayBuffer);
+                for(let y=0;y<600;y++) {
+                    for(let x=0;x<1000;x++) {
+                        update(y,x,'#' + ('00000'+(byteArray[y*1000*3+x*3]*0x10000+byteArray[y*1000*3+x*3+1]*0x100+byteArray[y*1000*3+x*3+2]).toString(16)).substr(-6));
+                    }
+                }
+            }
+        };
+
+        oReq.send();
+    }
+
+    initialPaint();
+
+    var ws = null;
+    function connectWs() {
+        try {
+            ws = new WebSocket('$wsUrl');
+        } catch (e) {
+            alert("无法连接追踪服务器");
+            return;
+        }
+        ws.binaryType = "arraybuffer";
+        ws.onopen = function () {
+            const message = new Uint8Array([0xff]);
+            ws.send(message);
+        };
+
+        ws.onmessage = function (event) {
+            const raw_message = new Uint8Array(event.data);
+            const [type, data] = [raw_message[0], raw_message.slice(1)];
+            switch (type){
+                case 0xfa: {
+                    const x = data[1] * 256 + data[0];
+                    const y = data[3] * 256 + data[2];
+                    const colorR = data[4];
+                    const colorG = data[5];
+                    const colorB = data[6];
+                    update(y, x, "#" + colorR.toString(16) + colorG.toString(16) + colorB.toString(16));
+                    break;
+                }
+                case 0xfc: {
+                    initialPaint();
+                    break;
+                }
+                case 0xfd: {
+                    initialPaint();
+                    break;
+                }
+            }
+        };
+    }
+
+    connectWs();
+
+    (function () {
+        $('#activity-time-start').html(getDateTime(activityStartTime, false));
+        $('#activity-time-end').html(getDateTime(activityEndTime, true));
+        var countBeforeStart = activityStartTime > (new Date().getTime() / 1000);
+        var $$ = $('#activity-reminder');
+        var clock = setInterval(function () {
+            var time = Math.floor(new Date().getTime() / 1000);
+            if (countBeforeStart && (time > activityStartTime)) {
+                clearInterval(clock);
+                window.location.reload();
+            } else if (time <= activityStartTime) {
+                $$.html('(' + getFormattedTime(activityStartTime - time) + '后开始)');
+            } else if (time <= activityEndTime) {
+                $$.html('(' + getFormattedTime(activityEndTime - time) + '后结束)');
+            } else {
+                $$.html('(活动已结束)');
+            }
+        }, 1000);
+        document.getElementById('token').value=localStorage.getItem('token');
+        document.getElementById('uid').value=localStorage.getItem('uid');
+    })();
+</script>
+</body>
+
+</html>

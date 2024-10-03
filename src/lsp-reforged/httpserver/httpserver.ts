@@ -14,6 +14,11 @@ export class HttpServer {
             let request = new Request(req);
             let response = new Response(res);
             logger.info("HttpServer", `${req.method} ${request.getPathname()}`);
+            if(req.method == "OPTIONS") {
+                res.setHeader('access-control-allow-headers', req.headers["access-control-request-headers"]!);
+                res.end();
+                return;
+            }
             if(req.method == "POST") {
                 try{
                     await request.getData();

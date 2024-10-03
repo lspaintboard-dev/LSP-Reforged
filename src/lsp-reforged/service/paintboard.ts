@@ -1,7 +1,7 @@
 import path from "path";
 import { Request, Response } from "../httpserver/handling.js";
 import { Server } from "../server/server.js";
-import { Service } from "../service/service.js";
+import { Service } from "./service.js";
 import { Translator } from "../utils/translator.js";
 import { Permission } from "../permission/permission.js";
 
@@ -55,7 +55,7 @@ class PaintBoard {
     constructor(width: number, height: number, loadFromString: boolean, defaultColor: number = 0xaaaaaa, boardString: string = '') {
         this.width = width;
         this.height = height;
-        this.boardArrayCache = new Uint8Array(this.width * this.height);
+        this.boardArrayCache = new Uint8Array(this.width * this.height * 3);
         const _defaultColor: Color = new Color(defaultColor); // 切记不要用这个初始化 Pixel，一定要 new 一个
         if(loadFromString) {
             for(let y=0;y<this.height;y++) {
