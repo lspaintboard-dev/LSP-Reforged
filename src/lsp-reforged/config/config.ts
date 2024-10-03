@@ -1,6 +1,7 @@
 import { Logger } from "../utils/logger.js";
 import * as yaml from "js-yaml";
 import * as fs from "fs";
+import { Translator } from "../utils/translator.js";
 
 export class Config {
     private configPath: string;
@@ -15,7 +16,8 @@ export class Config {
         fs.writeFileSync(this.configPath, yaml.dump(this.config));
     }
 
-    public getConfig(key: string = ""): any {
+    public getConfig(key?: string): Config | any {
+        if(key == undefined) return this;
         let _ = 0;
         let keyList: string[] = key.split('.');
         let _config = this.config;
@@ -24,7 +26,7 @@ export class Config {
             _++;
         }
         if(_config == undefined) {
-            throw `Error: 没有条目 ${key}!`;
+            throw Translator.translate("config.noSuchKeyException") + `: ${key}`;
         }
         else return _config;
     }

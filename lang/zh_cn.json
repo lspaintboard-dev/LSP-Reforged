@@ -1,0 +1,18 @@
+{
+    "TODO": [
+        "config.noSuchKeyException",
+        "server.serviceNotFoundException",
+        "server.serviceAlreadyHaveException",
+        "server.serviceException",
+        "server.startMessage",
+        "server.stopMessage",
+        "permission.serviceInitializeException",
+        "auth.serviceInitializeException",
+        "httpserver.response.contentTypeException",
+        "database.disconnectException",
+        "database.connectException",
+        "httpserver.request.notAValidJSONException",
+        "httpserver.request.receiveException",
+        "httpserver.response.alreadyJsonedException"
+    ]
+}

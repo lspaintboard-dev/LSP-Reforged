@@ -1,0 +1,16 @@
+logging:
+  logLevel: 0
+  logIntoConsole: true
+  logIntoFile: true
+  logPath: '/logs'
+global:
+  workspace: '/Volumes/School/LSP-reforged'
+  defaultLanguage: 'zh_cn'
+auth:
+  __client_id: ''
+  _uid: ''
+  authString: 'LSPaintBoard'
+  registerBeforeS: 1145141919810
+  tokenCooldownMs: 300000
+localization:
+  zh_cn: '/lang/zh_cn.json'
