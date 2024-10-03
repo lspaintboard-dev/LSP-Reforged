@@ -171,9 +171,7 @@ export class PaintboardService implements Service {
                             }
                         }
                         else {
-                            console.log(this.server!.getAuthService());
-                            console.log(this.server!.getAuthService().tokenCache.get(uid));
-                            res.json({'statusCode': 403, 'data': {'errorType': 'auth.invalidToken', 'correctToken': this.server!.getAuthService().tokenCache.get(uid)}});
+                            res.json({'statusCode': 403, 'data': {'errorType': 'auth.invalidToken'}});
                             return 403;
                         }
                     }
