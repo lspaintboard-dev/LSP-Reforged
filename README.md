@@ -10,6 +10,9 @@ lspaintboard-reforged version!
 ```
 global.workspace: 工作目录绝对路径
 global.port: 监听端口(http)
+global.wsPort: 监听端口(websocket)
+global.certPath: 证书公钥
+global.keyPath: 证书私钥
 auth.__client_id: 一个已经过实名认证的洛谷账号的 cookie 中的 __client_id
 auth._uid: 一个已经过实名认证的洛谷账号的 uid
 auth.registerBeforeS: token 获取所需要用户在多少秒前注册，单位秒
