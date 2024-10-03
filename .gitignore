@@ -2,5 +2,5 @@ node_modules
 dist
 logs
 build
-config.yml
-db.db
+**/config.yml
+**/db.db
