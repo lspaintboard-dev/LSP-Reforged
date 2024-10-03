@@ -4,7 +4,7 @@ logging:
   logIntoFile: true
   logPath: '${WORKSPACE}/logs'
 global:
-  workspace: '/Volumes/School/LSP-reforged'
+  workspace: '/Volumes/School/LSP-reforged/LSP-Reforged'
   defaultLanguage: 'zh_cn'
 auth:
   __client_id: ''
@@ -13,4 +13,6 @@ auth:
   registerBeforeS: 1145141919810
   tokenCooldownMs: 300000
 localization:
-  zh_cn: '/lang/zh_cn.json'
+  zh_cn: '${WORKSPACE}/lang/zh_cn.json'
+database:
+  path: '${WORKSPACE}/db.db'

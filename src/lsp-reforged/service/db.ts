@@ -1,10 +1,11 @@
-import { Server } from "../server/server";
-import { Logger } from "../utils/logger";
-import { Service } from "./service";
-import { Config } from "../config/config";
-import { Translator } from "../utils/translator";
-const sqlite3 = require('sqlite3').verbose();
-const sqliteOpen = require('sqlite').open;
+import { Server } from "../server/server.js";
+import { Logger } from "../utils/logger.js";
+import { Service } from "./service.js";
+import { Config } from "../config/config.js";
+import { Translator } from "../utils/translator.js";
+import sqlite3 from 'sqlite3';
+import * as _sqlite from 'sqlite';
+const sqliteOpen = _sqlite.open;
 
 export interface Database {
     connect(config: any, logger: Logger): Promise<number>
@@ -23,12 +24,12 @@ export class DBSqlite3 implements Database {
         this.logger = logger;
         try{
             this.db = await sqliteOpen({
-                filename: config.getConfig("database.path"),
+                filename: config.getConfig("database.path").replaceAll('${WORKSPACE}', config.getConfig("global.workspace")),
                 driver: sqlite3.Database
             });
         }
         catch(err) {
-            this.logger.critical("Sqlite3Driver", Translator.translate("database.connectException") + err)
+            this.logger.critical("Sqlite3Driver", Translator.translate("database.connectException") + ": " + err)
             process.exit(1);
         }
         return 0;
@@ -66,7 +67,7 @@ export class DBService implements Service {
 
     public async onInitialize(server: Server, root: string, apiRoot: string): Promise<void> {
         this.server = server;   
-        this.db.connect(server.getConfig(), server.getLogger());
+        await this.db.connect(server.getConfig(), server.getLogger());
         this.server.getBus().on('stop', () => {this.db.disconnect(server.getLogger())});
     }
 

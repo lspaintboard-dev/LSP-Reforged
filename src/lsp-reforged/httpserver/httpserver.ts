@@ -1,8 +1,8 @@
-import { HandlerFunction, Router } from "./router";
+import { HandlerFunction, Router } from "./router.js";
 import * as http from "http";
 import * as url from "url";
-import { Logger } from "../utils/logger";
-import { Request, Response } from "./handling";
+import { Logger } from "../utils/logger.js";
+import { Request, Response } from "./handling.js";
 
 export class HttpServer {
     private router: Router = new Router();
@@ -14,11 +14,18 @@ export class HttpServer {
             const pathname = url.parse(req.url?req.url:'').pathname;
             let request = new Request(req);
             let response = new Response(res);
-            await request.getData();
+            try{
+                await request.getData();
+            } catch (err) {
+                response.json({"statusCode": 400, "data": {"errorType": err}});
+                res.statusCode = 400;
+                res.end();
+                return;
+            }
             logger.info("HttpServer", `${req.method} ${pathname}`);
             const code = await this.router.route(request).handle(request, response);
             logger.info("HttpServer", `${req.method} ${pathname}: ${code}`);
-            res.writeHead(code, res.getHeaders());
+            res.statusCode = code;
             res.end();
         });
     }

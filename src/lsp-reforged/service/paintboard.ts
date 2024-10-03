@@ -1,7 +1,7 @@
-import { Request } from "../httpserver/handling";
-import { Server } from "../server/server";
-import { Service } from "../service/service";
-import { Translator } from "../utils/translator";
+import { Request } from "../httpserver/handling.js";
+import { Server } from "../server/server.js";
+import { Service } from "../service/service.js";
+import { Translator } from "../utils/translator.js";
 
 export class PaintboardService implements Service {
     private server: Server | undefined;

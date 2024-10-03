@@ -1,5 +1,5 @@
 import { ServerResponse, IncomingMessage } from "http";
-import { Translator } from "../utils/translator";
+import { Translator } from "../utils/translator.js";
 
 export class Request {
     private request: IncomingMessage;
@@ -17,14 +17,14 @@ export class Request {
     
     public async getData() {
         this.data = await new Promise((resolve, reject) => {
-            let _data: any;
+            let _data: any = '';
             this.request.on('data', (data) => {
                 _data += data;
             })
             this.request.on('end', () => {
                 this.transmitted = true;
                 try {
-                    resolve(JSON.parse(this.data));
+                    resolve(JSON.parse(_data));
                 }
                 catch (err) {
                     reject(Translator.translate("httpserver.request.notAValidJSONException"));
@@ -73,7 +73,7 @@ export class Response {
             throw Translator.translate("httpserver.response.alreadyJsonedException");
         }
         this.setHeader("content-type", "application/json")
-        this.response.write(json);
+        this.response.write(JSON.stringify(json));
         this.jsonResponse = 1;
     }
 

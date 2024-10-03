@@ -1,6 +1,6 @@
 import { Logger } from "../utils/logger.js";
 import * as yaml from "js-yaml";
-import * as fs from "fs";
+import fs from "fs-extra";
 import { Translator } from "../utils/translator.js";
 
 export class Config {
@@ -9,7 +9,14 @@ export class Config {
 
     constructor(configPath: string) {
         this.configPath = configPath;
-        this.config = yaml.load(fs.readFileSync(configPath, 'utf-8'));
+        try {
+            this.config = yaml.load(fs.readFileSync(configPath, 'utf-8'));
+        }
+        catch(err) {
+            console.log("An error occurs while loading config file.");
+            console.log(err);
+            process.exit(1);
+        }
     }
     
     public save(): void {

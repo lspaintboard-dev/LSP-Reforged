@@ -1,4 +1,4 @@
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
 
 export class Translator {
     private static translations: Map<string, string>;

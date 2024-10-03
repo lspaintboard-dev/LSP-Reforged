@@ -1,7 +1,7 @@
-import { Server } from "../server/server";
-import { DBService } from "../service/db";
-import { Service } from "../service/service";
-import { Translator } from "../utils/translator";
+import { Server } from "../server/server.js";
+import { DBService } from "../service/db.js";
+import { Service } from "../service/service.js";
+import { Translator } from "../utils/translator.js";
 
 export class Permission {
     public static PERM_PAINT: number;

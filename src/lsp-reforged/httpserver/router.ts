@@ -1,4 +1,4 @@
-import { Request, Response } from "./handling";
+import { Request, Response } from "./handling.js";
 
 export type HandlerFunction = (req: Request, res: Response, params: object) => Promise<number>;
 
@@ -31,6 +31,6 @@ export class Router {
 
     public route(req: Request): Route {
         //TODO
-        return new Route(async () => {return 200;}, {});
+        return new Route(async () => {return 404;}, {});
     }
 }

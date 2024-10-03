@@ -27,9 +27,11 @@ export class Server {
         this.db = db;
         this.permissionService = new PermissionService();
         this.authService = new AuthService();
-        this.db.onInitialize(this, "/db", '/api/db');
-        this.permissionService.onInitialize(this, '/permission', '/api/permission');
-        this.authService.onInitialize(this, '/auth', '/api/auth');
+        this.db.onInitialize(this, "/db", '/api/db').then(() => {
+            this.permissionService.onInitialize(this, '/permission', '/api/permission').then(() => {
+                this.authService.onInitialize(this, '/auth', '/api/auth');
+            });
+        });
         this.httpServer = new HttpServer(this.logger);
     }
 
@@ -91,6 +93,7 @@ export class Server {
 
     public run(): void {
         this.getLogger().warn('Server', Translator.translate('server.startMessage'));
+        this.httpServer.listen(25566)
         //TODO httplisten
     }
 
