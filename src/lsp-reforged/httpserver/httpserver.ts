@@ -11,21 +11,26 @@ export class HttpServer {
     constructor (logger: Logger) {
         // 可能不行async
         this.server = http.createServer(async (req, res) => {
-            const pathname = url.parse(req.url?req.url:'').pathname;
             let request = new Request(req);
             let response = new Response(res);
-            try{
-                await request.getData();
-            } catch (err) {
-                response.json({"statusCode": 400, "data": {"errorType": err}});
-                res.statusCode = 400;
-                res.end();
-                return;
+            logger.info("HttpServer", `${req.method} ${request.getPathname()}`);
+            if(req.method == "POST") {
+                try{
+                    await request.getData();
+                } catch (err) {
+                    response.json({"statusCode": 400, "data": {"errorType": err}});
+                    res.statusCode = 400;
+                    res.end();
+                    logger.info("HttpServer", `${req.method} ${request.getPathname()}: 400`);
+                    return;
+                }
             }
-            logger.info("HttpServer", `${req.method} ${pathname}`);
-            const code = await this.router.route(request).handle(request, response);
+            const pathname = request.getPathname();
+            const code = await this.router.route(request, response, logger);
             logger.info("HttpServer", `${req.method} ${pathname}: ${code}`);
             res.statusCode = code;
+            res.writeHead(code);
+            response.send();
             res.end();
         });
     }
@@ -34,7 +39,7 @@ export class HttpServer {
         this.server.listen(port, "0.0.0.0");
     }
 
-    public registerHandler(path: string, handler: HandlerFunction) {
-        this.router.register(path, handler)
+    public registerHandler(path: string, handler: HandlerFunction, originThis: any) {
+        this.router.register(path, handler, originThis)
     }
 }

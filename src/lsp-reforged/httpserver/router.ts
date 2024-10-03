@@ -1,36 +1,40 @@
+import { Logger } from "../utils/logger.js";
 import { Request, Response } from "./handling.js";
 
-export type HandlerFunction = (req: Request, res: Response, params: object) => Promise<number>;
-
-export class Route {
-    private handler: HandlerFunction;
-    private params: object;
-
-    constructor(handler: HandlerFunction, params: object) {
-        this.handler = handler;
-        this.params = params;
-    }
-
-    public async handle(req: Request, res: Response): Promise<number> {
-        if(this.handler == undefined) {
-            return 404;
-        }
-        try {
-            return await this.handler(req, res, this.params);
-        }
-        catch (err) {
-            return 500;
-        }
-    }
-}
+export type HandlerFunction = (req: Request, res: Response, urlParams: Array<string>) => Promise<number>;
 
 export class Router {
-    public register(path: string, handler: HandlerFunction) {
-        
+    private routeMap: Map<RegExp, Array<any>> = new Map<RegExp, Array<any>>();
+
+    public register(path: string, handler: HandlerFunction, originThis: any) {
+        const NEED_TO_REPLACE = "\\()[]{}^$+*?.|";
+        if(path[0]!='/') path = '/' + path;
+        for(let i=0;i<NEED_TO_REPLACE.length;i++) {
+            path = path.replaceAll(NEED_TO_REPLACE[i], '\\' + NEED_TO_REPLACE[i]);
+        }
+        const _ = path.split('/');
+        let regex = '';
+        _.forEach((value) => {if(value!=''){if(value.charAt(0)=='<'&&value.charAt(value.length-1)=='>') regex+='/([^/]*?)'; else regex+='/'+value;}});
+        const regExp: RegExp = new RegExp('^'+regex+'$', "i");
+        this.routeMap.set(regExp, [handler, originThis]);
     }
 
-    public route(req: Request): Route {
-        //TODO
-        return new Route(async () => {return 404;}, {});
+    public async route(req: Request, res: Response, logger: Logger): Promise<number> {
+        const pathname: string = req.getPathname() || '';
+        for(const regex of this.routeMap.keys()) {
+            if(regex.test(pathname)) {
+                const urlParams: Array<string> = pathname.match(pathname)?.slice(1) || [];
+                try {
+                    const _ = this.routeMap.get(regex) || [(()=>{return 500;}), {}];
+                    return await _[0].call(_[1], req, res, urlParams);
+                } catch(err: any) {
+                    logger.error("HttpServer", err);
+                    return 500;
+                }
+            }
+        }
+        return 404;
     }
 }
+
+// Method not allowed 405

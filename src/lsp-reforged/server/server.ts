@@ -71,8 +71,8 @@ export class Server {
         return this.authService;
     }
 
-    public registerHttpReq(path: string, handler: HandlerFunction) {
-        this.httpServer.registerHandler(path, handler);
+    public registerHttpReq(path: string, handler: HandlerFunction, originThis: any) {
+        this.httpServer.registerHandler(path, handler, originThis);
     }
 
     public async addService(key: string, service: Service, root: string, rootApi: string): Promise<boolean> {

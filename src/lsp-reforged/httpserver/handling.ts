@@ -1,15 +1,22 @@
 import { ServerResponse, IncomingMessage } from "http";
 import { Translator } from "../utils/translator.js";
+import * as url from "url";
 
 export class Request {
     private request: IncomingMessage;
     private headers: Map<string, any>;
     private data: any;
     private transmitted: boolean = false;
+    private method: string;
+    private pathname;
+    private params;
 
     constructor(request: IncomingMessage) {
         this.request = request;
         this.headers = new Map<string, any>;
+        this.method = request.method?request.method:'';
+        this.pathname = url.parse(request.url?request.url:'').pathname;
+        this.params = url.parse(request.url?request.url:'', true).query;
         for(let i = 0; i < request.rawHeaders.length; i+=2) {
             this.headers.set(request.rawHeaders[i].toLowerCase(), request.rawHeaders[i+1]);
         }
@@ -47,11 +54,25 @@ export class Request {
             throw Translator.translate("httpserver.request.transmissionNotEndedException");
         }
     }
+
+    public getMethod(): string {
+        return this.method;
+    }
+
+    public getPathname() {
+        return this.pathname;
+    }
+
+    public getParams() {
+        return this.params;
+    }
+
 }
 
 export class Response {
     private jsonResponse: number = -1;
     private response: ServerResponse;
+    private payload: string = '';
 
     constructor(response: ServerResponse) {
         this.response = response;
@@ -73,7 +94,7 @@ export class Response {
             throw Translator.translate("httpserver.response.alreadyJsonedException");
         }
         this.setHeader("content-type", "application/json")
-        this.response.write(JSON.stringify(json));
+        this.payload = JSON.stringify(json);
         this.jsonResponse = 1;
     }
 
@@ -82,6 +103,10 @@ export class Response {
             throw Translator.translate("httpserver.response.contentTypeException");
         }
         this.jsonResponse = 0;
-        this.write(content);
+        this.payload += content;
+    }
+
+    public send() {
+        this.response.write(this.payload);
     }
 }

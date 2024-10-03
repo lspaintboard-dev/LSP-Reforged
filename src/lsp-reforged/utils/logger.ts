@@ -27,7 +27,7 @@ export class Logger {
         this.file = fs.openSync(path.join(this.logPath, `${this.initializedTime}.log`), 'w');
     }
     private log(level: number, msg: string): void {
-        if(level > this.logLevel) {
+        if(level >= this.logLevel) {
             if(this.logIntoFile) {
                 fs.appendFileSync(this.file, msg);
             }
