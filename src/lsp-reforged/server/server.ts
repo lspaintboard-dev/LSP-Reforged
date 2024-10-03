@@ -8,6 +8,7 @@ import { PermissionService } from '../permission/permission.js';
 import { AuthService } from '../auth/auth.js';
 import { HttpServer } from '../httpserver/httpserver.js';
 import { HandlerFunction } from '../httpserver/router.js';
+import { PaintboardService } from '../service/paintboard.js';
 
 export class Server {
     private logger: utils.Logger;
@@ -18,6 +19,7 @@ export class Server {
     private permissionService: PermissionService;
     private authService: AuthService;
     private httpServer: HttpServer;
+    private paintboardService: PaintboardService;
 
     constructor(config: Config, db: DBService) {
         this.bus = new EventEmitter();
@@ -27,9 +29,12 @@ export class Server {
         this.db = db;
         this.permissionService = new PermissionService();
         this.authService = new AuthService();
+        this,this.paintboardService = new PaintboardService();
         this.db.onInitialize(this, "/db", '/api/db').then(() => {
             this.permissionService.onInitialize(this, '/permission', '/api/permission').then(() => {
-                this.authService.onInitialize(this, '/auth', '/api/auth');
+                this.authService.onInitialize(this, '/auth', '/api/auth').then(() => {
+                    this.paintboardService.onInitialize(this, '/', '/api/paintboard');
+                });
             });
         });
         this.httpServer = new HttpServer(this.logger);
@@ -93,13 +98,15 @@ export class Server {
 
     public run(): void {
         this.getLogger().warn('Server', Translator.translate('server.startMessage'));
-        this.httpServer.listen(25566)
-        //TODO httplisten
+        this.getBus().on('startListen', () => {
+            this.httpServer.listen(this.getConfig('global.port'));
+        });
     }
 
     public stop(): void {
         this.getLogger().warn('Server', Translator.translate('server.stopMessage'));
         this.config.save();
+        this.httpServer.stop();
         this.bus.emit('stop');
     }
 };

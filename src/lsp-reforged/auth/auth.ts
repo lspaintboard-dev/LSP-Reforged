@@ -7,7 +7,7 @@ import axios, { AxiosResponse } from "axios";
 import path from "path";
 
 export class AuthService implements Service {
-    private tokenCache: Map<number, string>;
+    public tokenCache: Map<number, string>;
     private tokenTime: Map<number, number>;
     private server: Server | undefined;
     private cookieStr: string;
@@ -37,7 +37,6 @@ export class AuthService implements Service {
             this.server.getLogger().critical("Auth", Translator.translate("auth.serviceInitializeException"));
             process.exit(1);
         }
-        //TODO HTTP
         const getTokenPath = path.join(apiRoot, 'gettoken');
         server.registerHttpReq(getTokenPath, this.newTokenReqHandler, this);
     }
@@ -45,17 +44,17 @@ export class AuthService implements Service {
     public async refreshToken(uid: number): Promise<string> {
         const token: string = uuidv4();
         if (this.tokenCache.has(uid)) {
-            await this.server?.getDB().execute(`update tokens set token='${token}' where uid='${uid}'`, false);
+            await this.server?.getDB().execute(`update tokens set token='${token}' where uid=${uid}`, false);
         } 
         else {
-            await this.server?.getDB().execute(`insert into tokens (uid, token) values ('${uid}', '${token}')`, false);
+            await this.server?.getDB().execute(`insert into tokens (uid, token) values (${uid}, '${token}')`, false);
         }
         this.tokenCache.set(uid, token);
         this.tokenTime.set(uid, Date.now());
         return token;
     }
 
-    public async authToken(uid: number, token: string): Promise<boolean> {
+    public authToken(uid: number, token: string): boolean {
         return this.tokenCache.get(uid) == token;
     }
 

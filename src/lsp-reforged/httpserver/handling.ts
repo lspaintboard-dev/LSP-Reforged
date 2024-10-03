@@ -14,9 +14,9 @@ export class Request {
     constructor(request: IncomingMessage) {
         this.request = request;
         this.headers = new Map<string, any>;
-        this.method = request.method?request.method:'';
-        this.pathname = url.parse(request.url?request.url:'').pathname;
-        this.params = url.parse(request.url?request.url:'', true).query;
+        this.method = request.method!;
+        this.pathname = url.parse(request.url!).pathname;
+        this.params = url.parse(request.url!, true).query;
         for(let i = 0; i < request.rawHeaders.length; i+=2) {
             this.headers.set(request.rawHeaders[i].toLowerCase(), request.rawHeaders[i+1]);
         }
@@ -73,6 +73,7 @@ export class Response {
     private jsonResponse: number = -1;
     private response: ServerResponse;
     private payload: string = '';
+    private payloadArrayBuf: Uint8Array | null = null;
 
     constructor(response: ServerResponse) {
         this.response = response;
@@ -107,6 +108,14 @@ export class Response {
     }
 
     public send() {
-        this.response.write(this.payload);
+        if(this.payloadArrayBuf != null) {
+            this.response.write(this.payloadArrayBuf);
+        }
+        else this.response.write(this.payload);
+    }
+
+    public sendArrayBuffer(buf: Uint8Array) {
+        this.response.setHeader('content-type', 'image/gif');
+        this.payloadArrayBuf = buf;
     }
 }

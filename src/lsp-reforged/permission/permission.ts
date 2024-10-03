@@ -45,7 +45,7 @@ export class PermissionService implements Service {
         this.server = server;
         try {
             (await this.server.getDB().execute("select * from permissions", true)).forEach((dat: any) => {
-                this.permissionCache.set(dat.uid, dat.permissions);
+                this.permissionCache.set(dat.uid, new Permission(dat.permissions));
             });
         }
         catch(err) {
@@ -54,12 +54,16 @@ export class PermissionService implements Service {
         }
     }
 
-    public async hasPermission(uid: number, permission: number) {
-        return this.permissionCache.get(uid)?.hasPermission(permission);
+    public hasPermission(uid: number, permission: number) {
+        if(this.permissionCache.has(uid)) return this.permissionCache.get(uid)?.hasPermission(permission);
+        else return (Permission.PERM_PAINT & permission) == permission;
     }
 
     public async setPermission(uid: number, permission: number) {
-        await this.server?.getDB().execute(`update permissions set permissions = ${permission} where uid = ${uid}`, false);
+        if(this.permissionCache.has(uid)) await this.server?.getDB().execute(`update permissions set permissions = ${permission} where uid = ${uid}`, false);
+        else {
+            await this.server?.getDB().execute(`insert into permissions (uid, permissions) value (${uid}, ${permission})`, false);
+        }
         if(this.permissionCache.get(uid)) {
             this.permissionCache.get(uid)?.setPermission(permission);
         }

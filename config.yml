@@ -2,17 +2,25 @@ logging:
   logLevel: 0
   logIntoConsole: true
   logIntoFile: true
-  logPath: '${WORKSPACE}/logs'
+  logPath: ${WORKSPACE}/logs
 global:
-  workspace: '/Volumes/School/LSP-reforged/LSP-Reforged'
-  defaultLanguage: 'zh_cn'
+  workspace: /Volumes/School/LSP-reforged/LSP-Reforged
+  defaultLanguage: zh_cn
+  port: 25566
 auth:
   __client_id: ''
   _uid: ''
-  authString: 'LSPaintBoard'
+  authString: LSPaintBoard
   registerBeforeS: 1145141919810
-  tokenCooldownMs: 300000
+  tokenCooldownMs: 30000
 localization:
-  zh_cn: '${WORKSPACE}/lang/zh_cn.json'
+  zh_cn: ${WORKSPACE}/lang/zh_cn.json
 database:
-  path: '${WORKSPACE}/db.db'
+  path: ${WORKSPACE}/db.db
+paintboard:
+  height: 600
+  width: 1000
+  activityStartTimestamp: 0
+  activityEndTimestamp: 1145141919810
+  cooldown: 30000
+  resetBoard: false

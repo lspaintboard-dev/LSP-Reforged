@@ -39,6 +39,10 @@ export class HttpServer {
         this.server.listen(port, "0.0.0.0");
     }
 
+    public stop() {
+        this.server.close();
+    }
+
     public registerHandler(path: string, handler: HandlerFunction, originThis: any) {
         this.router.register(path, handler, originThis)
     }

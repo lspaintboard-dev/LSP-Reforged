@@ -12,3 +12,7 @@ await Translator.setTranslations(config.getConfig('localization.' + config.getCo
 const server = new Server(config, new DBService(new DBSqlite3()));
 
 server.run();
+
+process.on('SIGINT', () => {
+    server.stop();
+})

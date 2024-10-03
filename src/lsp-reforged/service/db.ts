@@ -68,7 +68,7 @@ export class DBService implements Service {
     public async onInitialize(server: Server, root: string, apiRoot: string): Promise<void> {
         this.server = server;   
         await this.db.connect(server.getConfig(), server.getLogger());
-        this.server.getBus().on('stop', () => {this.db.disconnect(server.getLogger())});
+        this.server.getBus().on('stopDB', () => {this.db.disconnect(server.getLogger())});
     }
 
     public async execute(cmd: string, isRead: boolean): Promise<any> {
