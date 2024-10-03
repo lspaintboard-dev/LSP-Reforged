@@ -4,6 +4,9 @@ import { Server } from "../server/server.js";
 import { Service } from "./service.js";
 import { Translator } from "../utils/translator.js";
 import { Permission } from "../permission/permission.js";
+import fs from "fs-extra";
+import * as WebSocket from "ws";
+import * as https from "https";
 
 class Color {
     public r: number = 0;
@@ -113,6 +116,7 @@ export class PaintboardService implements Service {
     private width: number = 0;
     private height: number = 0;
     private cooldown: number = 0;
+    private websocketServer: WebSocket.WebSocketServer | undefined;
 
     constructor() {
         this.cooldownCache = new Map<number, number>();
@@ -134,11 +138,54 @@ export class PaintboardService implements Service {
         const paintPath = path.join(apiRoot, 'paint');
         this.server.registerHttpReq(getBoardPath, this.getBoardReqHandler, this);
         this.server.registerHttpReq(paintPath, this.paintReqHandler, this);
+        const cert = await fs.readFile(server.getConfig('global.certPath').replaceAll('${WORKSPACE}', server.getConfig("global.workspace")));
+        const key = await fs.readFile(server.getConfig('global.keyPath').replaceAll('${WORKSPACE}', server.getConfig("global.workspace")));
+        this.websocketServer = await new Promise((resolve, reject) => {
+            const opts = {
+                cert: cert,
+                key: key,
+                path: path.join(apiRoot, 'ws')
+            }
+            const httpsServer = https.createServer(opts);
+            const wsServer = new WebSocket.WebSocketServer({ server: httpsServer });
+            wsServer.on('connection', (ws, req) => {
+                server.getLogger().info("Paintboard", `paintboard.getWebsocketConnection: ${req.connection.remoteAddress}`)
+                ws.on('message', (msg: any) => {
+                    try {
+                        msg = new Uint8Array(msg);
+                        console.log(msg)
+                        if (msg[0] === 0xff) {
+                            ws.send(new Uint8Array([0xfc]));
+                        }
+                        else {
+                            ws.close();
+                            wsServer.clients.delete(ws)
+                        }
+                    }
+                    catch {
+                        ws.close();
+                        wsServer.clients.delete(ws)
+                    }
+                });
+                ws.on('close', function () {
+                    wsServer.clients.delete(ws)
+                });
+                ws.on('error', function () {
+                    ws.close();
+                    wsServer.clients.delete(ws)
+                });
+            });
+            wsServer.on('listening', () => { resolve(wsServer);});
+
+            wsServer.on('error', (error) => { reject(error); });
+
+            httpsServer.listen(server.getConfig('global.wsPort'));
+        });
         this.server.getBus().emit('startListen');
         this.server.getBus().on('stop', async () => {
             await this.server?.getDB().execute(`update board set board = '${this.paintboard.getBoardString()}'`, false);
             this.server?.getBus().emit('stopDB');
-        })
+        });
     }
 
     public async paintReqHandler(req: Request, res: Response, urlParams: Array<string>): Promise<number> {
@@ -160,7 +207,22 @@ export class PaintboardService implements Service {
                         if(this.server!.getAuthService().authToken(uid, token)) {
                             if(this.server!.getPermissionService().hasPermission(uid, Permission.PERM_PAINT)) {
                                 this.paintboard.setPixel(xPos, yPos, color);
-                                //TODO Websocket
+                                const broadcast = new Uint8Array([0xfa, xPos%256, Math.floor(xPos/256), yPos%256, Math.floor(yPos/256), color&0xFF0000, color&0x00FF00, color&0x0000FF]);
+                                this.websocketServer?.clients.forEach((client) => {
+                                    if (client.readyState === WebSocket.WebSocket.OPEN) {
+                                        try {
+                                            client.send(broadcast);
+                                        }
+                                        catch (err) {
+                                            client.close();
+                                            this.websocketServer?.clients.delete(client);
+                                        }
+                                    }
+                                    else if (client.readyState !== WebSocket.WebSocket.CONNECTING) {
+                                        client.close();
+                                        this.websocketServer?.clients.delete(client);
+                                    }
+                                })
                                 res.json({'statusCode': 200});
                                 this.cooldownCache.set(uid, Date.now());
                                 return 200;

@@ -1,5 +1,5 @@
 logging:
-  logLevel: 0
+  logLevel: 1
   logIntoConsole: true
   logIntoFile: true
   logPath: ${WORKSPACE}/logs
@@ -7,6 +7,9 @@ global:
   workspace: /Volumes/School/LSP-reforged/LSP-Reforged
   defaultLanguage: zh_cn
   port: 25566
+  wsPort: 25567
+  certPath: ''
+  keyPath: ''
 auth:
   __client_id: ''
   _uid: ''
@@ -22,5 +25,5 @@ paintboard:
   width: 1000
   activityStartTimestamp: 0
   activityEndTimestamp: 1145141919810
-  cooldown: 30000
-  resetBoard: false
+  cooldown: -1
+  resetBoard: true
