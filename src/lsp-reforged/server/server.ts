@@ -29,7 +29,7 @@ export class Server {
         this.db = db;
         this.permissionService = new PermissionService();
         this.authService = new AuthService();
-        this,this.paintboardService = new PaintboardService();
+        this.paintboardService = new PaintboardService();
         this.db.onInitialize(this, "/db", '/api/db').then(() => {
             this.permissionService.onInitialize(this, '/permission', '/api/permission').then(() => {
                 this.authService.onInitialize(this, '/auth', '/api/auth').then(() => {

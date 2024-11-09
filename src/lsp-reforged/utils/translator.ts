@@ -5,7 +5,7 @@ export class Translator {
 
     public static async setTranslations(langFile: string) {
         const translations = new Map<string, string>();
-        const langJson: object = (await fs.readFile(langFile)).toJSON();
+        const langJson: object = JSON.parse((fs.readFileSync(langFile)).toString());
         for(const k in langJson) {
             const v = langJson[k];
             translations.set(k, v);
