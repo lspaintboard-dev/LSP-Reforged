@@ -91,15 +91,16 @@ export class Server {
             return true;
         }
         catch (err) {
-            this.getLogger().error('Server', Translator.translate('server.serviceException') + `: ${key}`);
+            this.getLogger().error('Server', Translator.translate('server.serviceInitializeException') + `: ${key}`);
             return false;
         }
     }
 
     public run(): void {
-        this.getLogger().warn('Server', Translator.translate('server.startMessage'));
+        this.getLogger().warn('Server', Translator.translate('server.startingMessage'));
         this.getBus().on('startListen', () => {
             this.httpServer.listen(this.getConfig('global.port'));
+            this.getLogger().warn('Server', Translator.translate('server.startedMessage'));
         });
     }
 
