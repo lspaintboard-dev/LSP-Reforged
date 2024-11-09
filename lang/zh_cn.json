@@ -1,18 +1,22 @@
 {
-    "TODO": [
-        "config.noSuchKeyException",
-        "server.serviceNotFoundException",
-        "server.serviceAlreadyHaveException",
-        "server.serviceException",
-        "server.startMessage",
-        "server.stopMessage",
-        "permission.serviceInitializeException",
-        "auth.serviceInitializeException",
-        "httpserver.response.contentTypeException",
-        "database.disconnectException",
-        "database.connectException",
-        "httpserver.request.notAValidJSONException",
-        "httpserver.request.receiveException",
-        "httpserver.response.alreadyJsonedException"
-    ]
+    "auth.serviceCookieTestException": "不合法的cookie",
+    "auth.serviceInitializeException": "验证服务加载失败",
+    "auth.inCooldown": "token获取冷却中",
+    "auth.luoguException": "洛谷验证失败",
+    "config.noSuchKeyException": "配置未找到",
+    "httpserver.request.notAValidJSONException": "不是合法的json",
+    "httpserver.request.receiveException": "接收失败",
+    "httpserver.request.transmissionNotEndedException": "传输未结束",
+    "httpserver.response.contentTypeException": "返回类型错误",
+    "httpserver.response.alreadyJsonedException": "不应重复返回json",
+    "permission.serviceInitializeException": "权限加载失败",
+    "server.serviceNotFoundException": "未找到服务",
+    "server.serviceAlreadyHaveException": "服务名已存在",
+    "server.serviceInitializeException": "服务加载失败",
+    "server.startingMessage": "服务器启动中...",
+    "server.startedMessage": "服务器已启动",
+    "server.stopMessage": "服务器已关闭",
+    "database.connectException": "数据库连接失败",
+    "database.disconnectException": "数据库断开连接失败",
+    "paintboard.paintInCooldown": "绘画冷却中"
 }
