@@ -138,22 +138,37 @@ export class PaintboardService implements Service {
         const paintPath = path.join(apiRoot, 'paint');
         this.server.registerHttpReq(getBoardPath, this.getBoardReqHandler, this);
         this.server.registerHttpReq(paintPath, this.paintReqHandler, this);
-        const cert = await fs.readFile(server.getConfig('global.certPath').replaceAll('${WORKSPACE}', server.getConfig("global.workspace")));
-        const key = await fs.readFile(server.getConfig('global.keyPath').replaceAll('${WORKSPACE}', server.getConfig("global.workspace")));
-        this.websocketServer = await new Promise((resolve, reject) => {
-            const opts = {
-                cert: cert,
-                key: key,
-                path: path.join(apiRoot, 'ws')
-            }
-            const httpsServer = https.createServer(opts);
-            const wsServer = new WebSocket.WebSocketServer({ server: httpsServer });
+        this.websocketServer = await new Promise(async (resolve, reject) => {
+            const wsServer: WebSocket.WebSocketServer = await new Promise((resolve, reject) => {
+                if(server.getConfig('global.wsUseTLS')) {
+                    const cert = fs.readFileSync(server.getConfig('global.certPath').replaceAll('${WORKSPACE}', server.getConfig("global.workspace")));
+                    const key = fs.readFileSync(server.getConfig('global.keyPath').replaceAll('${WORKSPACE}', server.getConfig("global.workspace")));
+                    const opts = {
+                        cert: cert,
+                        key: key,
+                        path: path.join(apiRoot, 'ws')
+                    }
+                    const httpsServer = https.createServer(opts);
+                    server.getBus().on('startListen', () => {
+                        httpsServer.listen(server.getConfig('global.wsPort'));
+                    });
+                    server.getBus().on('stop', () => {
+                        httpsServer.close();
+                    });
+                    resolve(new WebSocket.WebSocketServer({ server: httpsServer }));
+                } else {
+                    const _ = new WebSocket.WebSocketServer({port: server.getConfig('global.wsPort')});
+                    server.getBus().on('stop', () => {
+                        _.close();
+                    });
+                    resolve(_);
+                }
+            });
             wsServer.on('connection', (ws, req) => {
                 server.getLogger().info("Paintboard", `paintboard.getWebsocketConnection: ${req.connection.remoteAddress}`)
                 ws.on('message', (msg: any) => {
                     try {
                         msg = new Uint8Array(msg);
-                        console.log(msg)
                         if (msg[0] === 0xff) {
                             ws.send(new Uint8Array([0xfc]));
                         }
@@ -179,7 +194,7 @@ export class PaintboardService implements Service {
 
             wsServer.on('error', (error) => { reject(error); });
 
-            httpsServer.listen(server.getConfig('global.wsPort'));
+            
         });
         this.server.getBus().emit('startListen');
         this.server.getBus().on('stop', async () => {
@@ -207,7 +222,7 @@ export class PaintboardService implements Service {
                         if(this.server!.getAuthService().authToken(uid, token)) {
                             if(this.server!.getPermissionService().hasPermission(uid, Permission.PERM_PAINT)) {
                                 this.paintboard.setPixel(xPos, yPos, color);
-                                const broadcast = new Uint8Array([0xfa, xPos%256, Math.floor(xPos/256), yPos%256, Math.floor(yPos/256), color&0xFF0000, color&0x00FF00, color&0x0000FF]);
+                                const broadcast = new Uint8Array([0xfa, xPos%256, Math.floor(xPos/256), yPos%256, Math.floor(yPos/256), (color&0xFF0000)/0x10000, (color&0x00FF00)/0x100, color&0x0000FF]);
                                 this.websocketServer?.clients.forEach((client) => {
                                     if (client.readyState === WebSocket.WebSocket.OPEN) {
                                         try {

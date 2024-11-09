@@ -357,12 +357,10 @@
         oReq.send();
     }
 
-    initialPaint();
-
     var ws = null;
     function connectWs() {
         try {
-            ws = new WebSocket('$wsUrl');
+            ws = new WebSocket('http://127.0.0.1:25567/api/paintboard/ws');
         } catch (e) {
             alert("无法连接追踪服务器");
             return;
@@ -388,6 +386,7 @@
                 }
                 case 0xfc: {
                     initialPaint();
+                    $('#title').text('Paintboard');
                     break;
                 }
                 case 0xfd: {

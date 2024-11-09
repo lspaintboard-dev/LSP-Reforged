@@ -26,7 +26,7 @@ export class AuthService implements Service {
             });
             this.cookieStr = `__client_id=${this.server.getConfig('auth.__client_id')}; _uid=${this.server.getConfig('auth._uid')};`;
             try {
-                await axios.get('https://www.luogu.com.cn/paste?_contentOnly=1', {headers: {cookie: this.cookieStr}});
+                await axios.get('https://www.luogu.com/paste?_contentOnly=1', {headers: {cookie: this.cookieStr}});
             } catch (error) {
                 this.server.getLogger().critical("Auth", Translator.translate("auth.serviceCookieTestException"));
                 process.exit(1);
@@ -97,7 +97,7 @@ export class AuthService implements Service {
     private async verifyDataFromLuogu(uid: number, paste: string): Promise<boolean> {
         try {
             const resp: AxiosResponse<any, any> | null = await new Promise((resolve, reject) => {
-                axios.get(`https://www.luogu.com.cn/paste/${paste}?_contentOnly=1`, {headers: {cookie: this.cookieStr}}).then((value) => {
+                axios.get(`https://www.luogu.com/paste/${paste}?_contentOnly=1`, {headers: {cookie: this.cookieStr}}).then((value) => {
                     resolve(value);
                 }).catch((error) => {
                     if(error.response.status == 404 || error.response.status == 403) {
@@ -109,7 +109,7 @@ export class AuthService implements Service {
             const obj: object = resp ? resp.data : {'code': 114514};
             if(obj['code'] == 114514) return false;
             if(obj['currentData']['paste']['data'] == this.server?.getConfig("auth.authString") && obj['currentData']['paste']['user']['uid'] == uid) {
-                const resp1 = await axios.get(`https://www.luogu.com.cn/user/${uid}?_contentOnly=1`, {headers: {cookie: this.cookieStr}});
+                const resp1 = await axios.get(`https://www.luogu.com/user/${uid}?_contentOnly=1`, {headers: {cookie: this.cookieStr}});
                 const obj1: object = resp1.data;
                 if(obj1['currentData']['user']['registerTime'] <= this.server?.getConfig("auth.registerBeforeS")) {
                     return true;
