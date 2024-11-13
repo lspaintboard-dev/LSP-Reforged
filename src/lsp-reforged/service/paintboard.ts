@@ -138,6 +138,7 @@ export class PaintboardService implements Service {
         const paintPath = path.join(apiRoot, 'paint');
         this.server.registerHttpReq(getBoardPath, this.getBoardReqHandler, this);
         this.server.registerHttpReq(paintPath, this.paintReqHandler, this);
+        this.server.getBus().emit('startListen');
         this.websocketServer = await new Promise(async (resolve, reject) => {
             const wsServer: WebSocket.WebSocketServer = await new Promise((resolve, reject) => {
                 if(server.getConfig('global.wsUseTLS')) {
@@ -149,9 +150,7 @@ export class PaintboardService implements Service {
                         path: path.join(apiRoot, 'ws')
                     }
                     const httpsServer = https.createServer(opts);
-                    server.getBus().on('startListen', () => {
-                        httpsServer.listen(server.getConfig('global.wsPort'));
-                    });
+                    httpsServer.listen(server.getConfig('global.wsPort'));
                     server.getBus().on('stop', () => {
                         httpsServer.close();
                     });
@@ -196,7 +195,6 @@ export class PaintboardService implements Service {
 
             
         });
-        this.server.getBus().emit('startListen');
         this.server.getBus().on('stop', async () => {
             await this.server?.getDB().execute(`update board set board = '${this.paintboard.getBoardString()}'`, false);
             this.server?.getBus().emit('stopDB');
@@ -210,6 +208,10 @@ export class PaintboardService implements Service {
             return 405;
         }
         try {
+            if(Date.now()<this.server?.getConfig('paintboard.activityStartTimestamp')*1000 || Date.now()>this.server?.getConfig('paintboard.activityEndTimestamp')*1000) {
+                res.json({'statusCode': 400, 'data': {'errorType': 'paintboard.illegalRequest'}});
+                return 400;
+            }
             const body: object = req.getBody();
             if(Number.isInteger(body['x']) && Number.isInteger(body['y']) && Number.isInteger(body['color']) && Number.isInteger(body['uid']) && typeof(body['token']) == "string") {
                 const xPos: number = body['x'];

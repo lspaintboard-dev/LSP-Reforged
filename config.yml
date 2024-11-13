@@ -4,17 +4,18 @@ logging:
   logIntoFile: true
   logPath: ${WORKSPACE}/logs
 global:
-  workspace: /Volumes/School/LSP-reforged/LSP-Reforged
+  workspace: /paintboard/LSP-Reforged
   defaultLanguage: zh_cn
-  port: 25566
-  wsPort: 25567
-  certPath: ''
-  keyPath: ''
+  port: 40001
+  wsPort: 40002
+  wsUseTLS: true
+  certPath: /etc/letsencrypt/live/paintboard.ayakacraft.com/fullchain.pem
+  keyPath: /etc/letsencrypt/live/paintboard.ayakacraft.com/privkey.pem
 auth:
-  __client_id: ''
-  _uid: ''
+  __client_id: 1cc234266111f10d67289a16d1eb571664e1f855
+  _uid: '378849'
   authString: LSPaintBoard
-  registerBeforeS: 1145141919810
+  registerBeforeS: 1735660800
   tokenCooldownMs: 30000
 localization:
   zh_cn: ${WORKSPACE}/lang/zh_cn.json
@@ -23,7 +24,7 @@ database:
 paintboard:
   height: 600
   width: 1000
-  activityStartTimestamp: 0
-  activityEndTimestamp: 1145141919810
-  cooldown: -1
+  activityStartTimestamp: 1737993600
+  activityEndTimestamp: 1738252800
+  cooldown: 30000
   resetBoard: true
