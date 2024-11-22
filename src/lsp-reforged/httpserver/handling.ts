@@ -114,7 +114,7 @@ export class Response {
         else this.response.write(this.payload);
     }
 
-    public sendArrayBuffer(buf: Uint8Array) {
+    public async sendArrayBuffer(buf: Uint8Array) {
         this.response.setHeader('content-type', 'image/gif');
         this.payloadArrayBuf = buf;
     }

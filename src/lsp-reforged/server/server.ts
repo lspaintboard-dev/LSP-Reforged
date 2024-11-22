@@ -101,6 +101,7 @@ export class Server {
         this.getBus().on('startListen', () => {
             this.httpServer.listen(this.getConfig('global.port'));
             this.getLogger().warn('Server', Translator.translate('server.startedMessage'));
+          
         });
     }
 

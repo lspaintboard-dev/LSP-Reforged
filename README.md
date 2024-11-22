@@ -11,6 +11,7 @@ lspaintboard-reforged version!
 global.workspace: 工作目录绝对路径
 global.port: 监听端口(http)
 global.wsPort: 监听端口(websocket)
+global.wsUseTLS: websocket 是否启用 TLS 加密
 global.certPath: 证书公钥
 global.keyPath: 证书私钥
 auth.__client_id: 一个已经过实名认证的洛谷账号的 cookie 中的 __client_id

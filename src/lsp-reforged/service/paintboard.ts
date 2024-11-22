@@ -7,6 +7,7 @@ import { Permission } from "../permission/permission.js";
 import fs from "fs-extra";
 import * as WebSocket from "ws";
 import * as https from "https";
+import * as async from 'async';
 
 class Color {
     public r: number = 0;
@@ -117,10 +118,35 @@ export class PaintboardService implements Service {
     private height: number = 0;
     private cooldown: number = 0;
     private websocketServer: WebSocket.WebSocketServer | undefined;
+    private paintReqPerSec: number = 0;
+    private paintReqPerSecAvg: number = 0;
+    private paintReqPerSecMax: number = 0;
+    private paintReqPerSecMin: number = 10000;
+    private bandSpeed: number = 0;
+    private paintQueue: async.QueueObject<object>;
 
     constructor() {
         this.cooldownCache = new Map<number, number>();
         this.paintboard = new PaintBoard(0, 0, false);
+        this.paintQueue = async.queue(async (data: object) => {
+            const xPos: number = data['xPos'];
+            const yPos: number = data['yPos'];
+            const color: number = data['color'];
+            const broadcast: Uint8Array | null = new Uint8Array([0xfa, xPos%256, Math.floor(xPos/256), yPos%256, Math.floor(yPos/256), (color&0xFF0000)/0x10000, (color&0x00FF00)/0x100, color&0x0000FF]);
+            this.websocketServer?.clients.forEach((client) => {
+            if (client.readyState === WebSocket.WebSocket.OPEN) {
+                try {
+                    client.send(broadcast!);
+                }
+                catch (err) {
+                    client.close();
+                }
+                }
+                else if (client.readyState !== WebSocket.WebSocket.CONNECTING) {
+                    client.close();
+                }
+            });
+        })
     }
 
     public async onInitialize(server: Server, root: string, apiRoot: string): Promise<void> {
@@ -166,20 +192,8 @@ export class PaintboardService implements Service {
             wsServer.on('connection', (ws, req) => {
                 server.getLogger().info("Paintboard", `paintboard.getWebsocketConnection: ${req.connection.remoteAddress}`)
                 ws.on('message', (msg: any) => {
-                    try {
-                        msg = new Uint8Array(msg);
-                        if (msg[0] === 0xff) {
-                            ws.send(new Uint8Array([0xfc]));
-                        }
-                        else {
-                            ws.close();
-                            wsServer.clients.delete(ws)
-                        }
-                    }
-                    catch {
-                        ws.close();
-                        wsServer.clients.delete(ws)
-                    }
+                    ws.close();
+                    wsServer.clients.delete(ws)
                 });
                 ws.on('close', function () {
                     wsServer.clients.delete(ws)
@@ -192,13 +206,23 @@ export class PaintboardService implements Service {
             wsServer.on('listening', () => { resolve(wsServer);});
 
             wsServer.on('error', (error) => { reject(error); });
-
+            resolve(wsServer);
             
         });
         this.server.getBus().on('stop', async () => {
             await this.server?.getDB().execute(`update board set board = '${this.paintboard.getBoardString()}'`, false);
             this.server?.getBus().emit('stopDB');
         });
+        setInterval(() => {
+            if(this.paintReqPerSecAvg == 0) this.paintReqPerSecAvg = this.paintReqPerSec;
+            this.paintReqPerSecMax = Math.max(this.paintReqPerSecMax, this.paintReqPerSec);
+            this.paintReqPerSecMin = Math.max(this.paintReqPerSecMin, this.paintReqPerSec);
+            this.paintReqPerSecAvg = this.paintReqPerSecAvg * 0.9 + this.paintReqPerSec * 0.1;
+            this.server!.getLogger().info("Paintboard", `Lst/Avg/Min/Max: ${this.paintReqPerSec}/${this.paintReqPerSecAvg}/${this.paintReqPerSecMax}/${this.paintReqPerSecMin}`);
+            this.server!.getLogger().info("Paintboard", `BandSpeed: ${this.bandSpeed/1024/1024} Mbps`);
+            this.paintReqPerSec = 0;
+            this.bandSpeed = 0;
+        }, 1000);
     }
 
     public async paintReqHandler(req: Request, res: Response, urlParams: Array<string>): Promise<number> {
@@ -208,6 +232,8 @@ export class PaintboardService implements Service {
             return 405;
         }
         try {
+            this.paintReqPerSec++;
+            this.bandSpeed+=100;
             if(Date.now()<this.server?.getConfig('paintboard.activityStartTimestamp')*1000 || Date.now()>this.server?.getConfig('paintboard.activityEndTimestamp')*1000) {
                 res.json({'statusCode': 400, 'data': {'errorType': 'paintboard.illegalRequest'}});
                 return 400;
@@ -220,26 +246,11 @@ export class PaintboardService implements Service {
                 const uid: number = body['uid'];
                 const token: string = body['token'];
                 if(xPos < this.width && xPos >= 0 && yPos < this.height && yPos >= 0 && color >= 0x000000 && color <= 0xffffff && uid >= 1) {
-                    if(!this.cooldownCache.has(uid) || (Date.now() - this.cooldownCache.get(uid)! >= this.cooldown)) {
+                    if((!this.cooldownCache.has(uid) || (Date.now() - this.cooldownCache.get(uid)! >= this.cooldown)) || (this.server!.getPermissionService().hasPermission(uid, Permission.PERM_ROOT))) {
                         if(this.server!.getAuthService().authToken(uid, token)) {
                             if(this.server!.getPermissionService().hasPermission(uid, Permission.PERM_PAINT)) {
                                 this.paintboard.setPixel(xPos, yPos, color);
-                                const broadcast = new Uint8Array([0xfa, xPos%256, Math.floor(xPos/256), yPos%256, Math.floor(yPos/256), (color&0xFF0000)/0x10000, (color&0x00FF00)/0x100, color&0x0000FF]);
-                                this.websocketServer?.clients.forEach((client) => {
-                                    if (client.readyState === WebSocket.WebSocket.OPEN) {
-                                        try {
-                                            client.send(broadcast);
-                                        }
-                                        catch (err) {
-                                            client.close();
-                                            this.websocketServer?.clients.delete(client);
-                                        }
-                                    }
-                                    else if (client.readyState !== WebSocket.WebSocket.CONNECTING) {
-                                        client.close();
-                                        this.websocketServer?.clients.delete(client);
-                                    }
-                                })
+                                this.paintQueue.push({xPos: xPos, yPos: yPos, color: color});
                                 res.json({'statusCode': 200});
                                 this.cooldownCache.set(uid, Date.now());
                                 return 200;
@@ -279,14 +290,9 @@ export class PaintboardService implements Service {
         if(req.getMethod() != "GET") {
             return 405;
         }
-        try {
-            res.sendArrayBuffer(this.paintboard.getBoard());
-            return 200;
-        } catch(err) {
-            this.server?.getLogger().error('Paintboard', err!.toString());
-            res.json({'statusCode': 500, 'data': {'errorType': 'unknown.internalServerError'}});
-            return 500;
-        }
+        const _: Uint8Array = this.paintboard.getBoard();
+        this.bandSpeed += 1.8*1024*1024;
+        return (res.sendArrayBuffer(_).then(() => {return 200;})).catch((reason: any) => {this.server?.getLogger().error('Paintboard', reason!.toString()); res.json({'statusCode': 500, 'data': {'errorType': 'unknown.internalServerError'}}); return 500;});
     }
 
 }

@@ -15,7 +15,7 @@
     "server.serviceInitializeException": "服务加载失败",
     "server.startingMessage": "服务器启动中...",
     "server.startedMessage": "服务器已启动",
-    "server.stopMessage": "服务器已关闭",
+    "server.stopMessage": "Stopping server...",
     "database.connectException": "数据库连接失败",
     "database.disconnectException": "数据库断开连接失败",
     "paintboard.paintInCooldown": "绘画冷却中"

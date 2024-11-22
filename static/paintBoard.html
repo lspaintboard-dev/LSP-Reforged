@@ -7,10 +7,9 @@
     <meta name="keywords" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1 user-scalable=no">
     <title>LS Paintboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/amazeui@2/dist/css/amazeui.min.css">
-    <script src="https://code.jquery.com/jquery-3.1.1.min.js"
-            integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery-ui-dist@1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.uwuwu.us.kg/amazeui.min.css">
+    <script src="https://cdn.uwuwu.us.kg/jquery.min.js"></script>
+    <script src="https://cdn.uwuwu.us.kg/jquery-ui.min.js"></script>
     <style>
         .about {
             background: #fff;
@@ -105,14 +104,13 @@
                     <p>
                         活动时间: <span id="activity-time-start"></span> ~ <span id="activity-time-end"></span> <span
                             id="activity-reminder"></span><br>
-                        活动规则: 未被禁言、已认证手机、注册时间在 2023/12/01 前的洛谷用户可参与。每个用户 30 秒可涂鸦一个点，可随意覆盖任何区域。<br>
-                        参与方式: 在 LuoguUid 中输入您的洛谷 uid, 新建一个剪贴板并<b>只输入</b> LSPaintBoard 后公开保存。将您的剪贴板
+                        活动规则: 未被禁言、已认证手机、注册时间在 2025/01/01 前的洛谷用户可参与。每个用户 30 秒可涂鸦一个点，可随意覆盖任何区域。<br>
+                        参与方式: 在 LuoguUid 中输入您的洛谷 uid, 新建一个剪贴板并<b>只输入</b> Come and join AyakaCraft with prizes on 607484880 后公开保存。将您的剪贴板
                         Url 中最后一串八位字符输入到 LuoguPaste 中后点击获取 Token。如果以后您想绘画输入 Token 与 uid 即可。当您绘画时会自动保存您的 uid 及 Token 至浏览器。
                     </p>
                     <p>禁止绘制违反法律、社会公德的图形，否则将被清除且上报网警。请大家组团时不要分享自己的 cookie，而是使用分享 Token 这种更安全的方式。分享 cookie
                         等同于分享账号，他人可以使用您的 cookie 在洛谷以您的名义进行任何操作。</p>
                     <p>本页面部分来源于<a href="https://www.luogu.com.cn/paintboard" target="_blank">官方绘板页面</a>。</p>
-                    <p>liucang 粉丝是我给它刷的，它是个傻逼，给它刷点粉。 ——吕泽楷</p>
                     
                 </div>
             </div>
@@ -125,9 +123,9 @@
     scale = 5;
     dragged = 0;
     lasttime = 0;
-    timelimit = 3000 / 1000;
+    timelimit = 1 / 1000;
     activityStartTime = 0;
-    activityEndTime = 1145141919810;
+    activityEndTime = 1738252800;
     nowintevel = 0;
     nowColor = "#000000";
     nowX = 0;
@@ -199,7 +197,7 @@
         localStorage.setItem('uid',document.getElementById('uid').value.toString())
         $.ajax({
             type: 'POST',
-            url: 'http://127.0.0.1:25566/api/paintboard/paint',
+            url: 'https://paintboard.ayakacraft.com/api/paintboard/paint',
             data: JSON.stringify({
                 x: nowX,
                 y: nowY,
@@ -237,7 +235,7 @@
     $('#reset-token').bind("click", function () {
         $.ajax({
             type: 'POST',
-            url: 'http://127.0.0.1:25566/api/auth/gettoken',
+            url: 'https://paintboard.ayakacraft.com/api/auth/gettoken',
             data: JSON.stringify({
                 uid: document.getElementById('uid').value.toString(),
                 paste: document.getElementById('paste').value
@@ -339,7 +337,7 @@
     function initialPaint() {
         console.log(0)
         var oReq = new XMLHttpRequest();
-        oReq.open("GET", "http://127.0.0.1:25566/api/paintboard/getboard");
+        oReq.open("GET", "https://paintboard.ayakacraft.com/api/paintboard/getboard");
         oReq.responseType = "arraybuffer";
 
         oReq.onload = function (oEvent) {
@@ -352,6 +350,7 @@
                     }
                 }
             }
+            $('#title').text('Paintboard');
         };
 
         oReq.send();
@@ -360,15 +359,14 @@
     var ws = null;
     function connectWs() {
         try {
-            ws = new WebSocket('http://127.0.0.1:25567/api/paintboard/ws');
+            ws = new WebSocket('https://paintboard.ayakacraft.com:40002/api/paintboard/ws');
         } catch (e) {
             alert("无法连接追踪服务器");
             return;
         }
         ws.binaryType = "arraybuffer";
         ws.onopen = function () {
-            const message = new Uint8Array([0xff]);
-            ws.send(message);
+            initialPaint();
         };
 
         ws.onmessage = function (event) {
@@ -382,15 +380,6 @@
                     const colorG = data[5];
                     const colorB = data[6];
                     update(y, x, "#" + colorR.toString(16) + colorG.toString(16) + colorB.toString(16));
-                    break;
-                }
-                case 0xfc: {
-                    initialPaint();
-                    $('#title').text('Paintboard');
-                    break;
-                }
-                case 0xfd: {
-                    initialPaint();
                     break;
                 }
             }

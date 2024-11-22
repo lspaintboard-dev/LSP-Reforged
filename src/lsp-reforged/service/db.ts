@@ -47,9 +47,11 @@ export class DBSqlite3 implements Database {
     public async disconnect(logger: Logger): Promise<number> {
         try{
             this.db.close();
+            process.exit(0);
         }
         catch(err){
             logger.critical("Sqlite3Driver", Translator.translate("database.disconnectException") + err)
+            process.exit(1);
             return 1;
         }
         return 0;

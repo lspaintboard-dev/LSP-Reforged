@@ -100,10 +100,14 @@ export class AuthService implements Service {
                 axios.get(`https://www.luogu.com/paste/${paste}?_contentOnly=1`, {headers: {cookie: this.cookieStr}}).then((value) => {
                     resolve(value);
                 }).catch((error) => {
-                    if(error.response.status == 404 || error.response.status == 403) {
-                        resolve(null);
+                    try {
+                        if(error.response.status == 404 || error.response.status == 403) {
+                            resolve(null);
+                        }
                     }
-                    reject(error);
+                    catch {
+                        reject(error);
+                    }
                 });
             })
             const obj: object = resp ? resp.data : {'code': 114514};
@@ -121,7 +125,6 @@ export class AuthService implements Service {
             }
         }
         catch (error) {
-            console.log(error);
             throw Translator.translate("auth.luoguException");
         }
     }

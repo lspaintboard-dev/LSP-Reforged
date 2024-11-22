@@ -8,23 +8,23 @@ global:
   defaultLanguage: zh_cn
   port: 40001
   wsPort: 40002
-  wsUseTLS: true
-  certPath: /etc/letsencrypt/live/paintboard.ayakacraft.com/fullchain.pem
-  keyPath: /etc/letsencrypt/live/paintboard.ayakacraft.com/privkey.pem
+  wsUseTLS: false
+  certPath: ''
+  keyPath: ''
 auth:
-  __client_id: 1cc234266111f10d67289a16d1eb571664e1f855
-  _uid: '378849'
-  authString: LSPaintBoard
+  __client_id: ''
+  _uid: ''
+  authString: LSPaintBoard-2025
   registerBeforeS: 1735660800
   tokenCooldownMs: 30000
 localization:
   zh_cn: ${WORKSPACE}/lang/zh_cn.json
 database:
-  path: ${WORKSPACE}/db.db
+  path: ${WORKSPACE}/db_new.db
 paintboard:
   height: 600
   width: 1000
-  activityStartTimestamp: 1737993600
+  activityStartTimestamp: 0
   activityEndTimestamp: 1738252800
-  cooldown: 30000
-  resetBoard: true
+  cooldown: 1
+  resetBoard: false

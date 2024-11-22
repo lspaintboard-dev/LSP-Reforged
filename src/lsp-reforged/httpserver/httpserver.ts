@@ -14,6 +14,7 @@ export class HttpServer {
             let request = new Request(req);
             let response = new Response(res);
             logger.info("HttpServer", `${req.method} ${request.getPathname()}`);
+            res.setHeader('Access-Control-Allow-Origin', '*');
             if(req.method == "OPTIONS") {
                 res.setHeader('access-control-allow-headers', req.headers["access-control-request-headers"]!);
                 res.end();
@@ -31,12 +32,13 @@ export class HttpServer {
                 }
             }
             const pathname = request.getPathname();
-            const code = await this.router.route(request, response, logger);
-            logger.info("HttpServer", `${req.method} ${pathname}: ${code}`);
-            res.statusCode = code;
-            res.writeHead(code);
-            response.send();
-            res.end();
+            this.router.route(request, response, logger).then((code) => {
+                logger.info("HttpServer", `${req.method} ${pathname}: ${code}`);
+                res.statusCode = code!;
+                res.writeHead(code!);
+                response.send();
+                res.end();
+            });
         });
     }
 

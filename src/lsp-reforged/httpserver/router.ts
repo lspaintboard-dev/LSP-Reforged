@@ -19,21 +19,25 @@ export class Router {
         this.routeMap.set(regExp, [handler, originThis]);
     }
 
-    public async route(req: Request, res: Response, logger: Logger): Promise<number> {
+    public async route(req: Request, res: Response, logger: Logger): Promise<number | undefined> {
         const pathname: string = req.getPathname() || '';
+        let matched: boolean = false;
         for(const regex of this.routeMap.keys()) {
             if(regex.test(pathname)) {
                 const urlParams: Array<string> = pathname.match(pathname)?.slice(1) || [];
                 try {
                     const _ = this.routeMap.get(regex) || [(()=>{return 500;}), {}];
-                    return await _[0].call(_[1], req, res, urlParams);
+                    matched = true;
+                    return _[0].call(_[1], req, res, urlParams).then((code: number) => {
+                        return code;
+                    });
                 } catch(err: any) {
                     logger.error("HttpServer", err);
                     return 500;
                 }
             }
         }
-        return 404;
+        if(!matched) return 404;
     }
 }
 
