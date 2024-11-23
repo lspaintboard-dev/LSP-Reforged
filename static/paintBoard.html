@@ -437,7 +437,7 @@
     $('#reset-token').bind("click", function () {
         $.ajax({
             type: 'POST',
-            url: 'https://paintboard.ayakacraft.com:11451/api/auth/gettoken',
+            url: 'https://api.paintboard.ayakacraft.com:11451/api/auth/gettoken',
             data: JSON.stringify({
                 uid: document.getElementById('uid').value.toString(),
                 paste: document.getElementById('paste').value
@@ -547,7 +547,7 @@
     function initialPaint() {
         console.log(0)
         var oReq = new XMLHttpRequest();
-        oReq.open("GET", "https://paintboard.ayakacraft.com:11451/api/paintboard/getboard");
+        oReq.open("GET", "https://api.paintboard.ayakacraft.com:11451/api/paintboard/getboard");
         oReq.responseType = "arraybuffer";
 
         oReq.onload = function (oEvent) {
