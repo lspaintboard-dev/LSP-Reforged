@@ -138,7 +138,7 @@ interface PaintQueueData {
 }
 
 interface PaintWSMessage {
-	clientId: WebSocket.WebSocket // 修改这里，使用 ws 包的 WebSocket 类型
+	clientId: WebSocket.WebSocket
 	type: number
 	data: Uint8Array
 }
@@ -157,6 +157,12 @@ export class PaintboardService implements Service {
 	private paintReqPerSecMin: number = 10000
 	private bandSpeed: number = 0
 	private paintQueue: async.QueueObject<PaintQueueData>
+
+	// 添加统计计数器
+	private wsRequestCount: number = 0
+	private wsSuccessCount: number = 0
+	private getBoardCount: number = 0
+	private lastStatsTime: number = Date.now()
 
 	constructor() {
 		this.cooldownCache = new Map<number, number>()
@@ -198,6 +204,8 @@ export class PaintboardService implements Service {
 
 			case 0xfe: {
 				// paint
+				this.wsRequestCount++ // 增加请求计数
+
 				const xPos = data[1] * 256 + data[0]
 				const yPos = data[3] * 256 + data[2]
 				const color = (data[4] << 16) + (data[5] << 8) + data[6]
@@ -238,6 +246,7 @@ export class PaintboardService implements Service {
 								Permission.PERM_PAINT
 							)
 						) {
+							this.wsSuccessCount++ // 增加成功计数
 							this.paintboard.setPixel(xPos, yPos, color)
 							this.paintQueue.push({ xPos, yPos, color })
 							clientId.send(
@@ -293,7 +302,6 @@ export class PaintboardService implements Service {
 		this.height = server.getConfig('paintboard.height')
 		this.cooldown = server.getConfig('paintboard.cooldown')
 		const getBoardPath = path.join(apiRoot, 'getboard')
-		// 移除paintPath相关代码
 		this.server.registerHttpReq(getBoardPath, this.getBoardReqHandler, this)
 		this.server.getBus().emit('startListen')
 		this.websocketServer = await new Promise(async (resolve, reject) => {
@@ -412,6 +420,29 @@ export class PaintboardService implements Service {
 				}
 			})
 		}, 30000)
+
+		// 添加统计输出定时器
+		setInterval(() => {
+			const now = Date.now()
+			const elapsed = (now - this.lastStatsTime) / 1000 // 转换为秒
+
+			this.server
+				?.getLogger()
+				.info(
+					'Paintboard Stats',
+					`WS Paint Requests/sec: ${(this.wsRequestCount / elapsed).toFixed(
+						2
+					)}, ` +
+						`Successful/sec: ${(this.wsSuccessCount / elapsed).toFixed(2)}, ` +
+						`GetBoard/sec: ${(this.getBoardCount / elapsed).toFixed(2)}`
+				)
+
+			// 重置计数器
+			this.wsRequestCount = 0
+			this.wsSuccessCount = 0
+			this.getBoardCount = 0
+			this.lastStatsTime = now
+		}, 5000)
 	}
 
 	// 移除paintReqHandler方法
@@ -425,6 +456,9 @@ export class PaintboardService implements Service {
 		if (req.getMethod() != 'GET') {
 			return 405
 		}
+
+		this.getBoardCount++ // 增加 getBoard 请求计数
+
 		const _: Uint8Array = this.paintboard.getBoard()
 		this.bandSpeed += 1.8 * 1024 * 1024
 		return res
