@@ -131,14 +131,6 @@ class PaintBoard {
 	}
 }
 
-interface PaintRequestBody {
-	x: number
-	y: number
-	color: number
-	uid: number
-	token: string
-}
-
 interface PaintQueueData {
 	xPos: number
 	yPos: number
@@ -185,14 +177,12 @@ export class PaintboardService implements Service {
 			])
 			this.websocketServer?.clients.forEach(client => {
 				if (client.readyState === WebSocket.WebSocket.OPEN) {
-					// 修改这里
 					try {
 						client.send(broadcast!)
 					} catch (err) {
 						client.close()
 					}
 				} else if (client.readyState !== WebSocket.WebSocket.CONNECTING) {
-					// 修改这里
 					client.close()
 				}
 			})
@@ -303,9 +293,8 @@ export class PaintboardService implements Service {
 		this.height = server.getConfig('paintboard.height')
 		this.cooldown = server.getConfig('paintboard.cooldown')
 		const getBoardPath = path.join(apiRoot, 'getboard')
-		const paintPath = path.join(apiRoot, 'paint')
+		// 移除paintPath相关代码
 		this.server.registerHttpReq(getBoardPath, this.getBoardReqHandler, this)
-		this.server.registerHttpReq(paintPath, this.paintReqHandler, this)
 		this.server.getBus().emit('startListen')
 		this.websocketServer = await new Promise(async (resolve, reject) => {
 			const wsServer: WebSocket.WebSocketServer = await new Promise(
@@ -425,128 +414,9 @@ export class PaintboardService implements Service {
 		}, 30000)
 	}
 
-	public async paintReqHandler(
-		req: Request,
-		res: Response,
-		urlParams: Array<string>
-	): Promise<number> {
-		// x: number = xPos, y: number = yPos, color: number = color, uid: number = uid, token: string = token
-		//TODO Websocket
-		if (req.getMethod() != 'POST') {
-			return 405
-		}
-		try {
-			this.paintReqPerSec++
-			this.bandSpeed += 100
-			if (
-				Date.now() <
-					this.server?.getConfig('paintboard.activityStartTimestamp') * 1000 ||
-				Date.now() >
-					this.server?.getConfig('paintboard.activityEndTimestamp') * 1000
-			) {
-				res.json({
-					statusCode: 400,
-					data: { errorType: 'paintboard.illegalRequest' }
-				})
-				return 400
-			}
-			const body = req.getBody() as PaintRequestBody
-			if (
-				Number.isInteger(body.x) &&
-				Number.isInteger(body.y) &&
-				Number.isInteger(body.color) &&
-				Number.isInteger(body.uid) &&
-				typeof body.token == 'string'
-			) {
-				const xPos: number = body.x
-				const yPos: number = body.y
-				const color: number = body.color
-				const uid: number = body.uid
-				const token: string = body.token
-				if (
-					xPos < this.width &&
-					xPos >= 0 &&
-					yPos < this.height &&
-					yPos >= 0 &&
-					color >= 0x000000 &&
-					color <= 0xffffff &&
-					uid >= 1
-				) {
-					if (
-						!this.cooldownCache.has(uid) ||
-						Date.now() - this.cooldownCache.get(uid)! >= this.cooldown ||
-						this.server!.getPermissionService().hasPermission(
-							uid,
-							Permission.PERM_ROOT
-						)
-					) {
-						if (this.server!.getAuthService().authToken(uid, token)) {
-							if (
-								this.server!.getPermissionService().hasPermission(
-									uid,
-									Permission.PERM_PAINT
-								)
-							) {
-								this.paintboard.setPixel(xPos, yPos, color)
-								this.paintQueue.push({ xPos: xPos, yPos: yPos, color: color })
-								res.json({ statusCode: 200 })
-								this.cooldownCache.set(uid, Date.now())
-								return 200
-							} else {
-								res.json({
-									statusCode: 403,
-									data: { errorType: 'paintboard.permissionDenied' }
-								})
-								return 403
-							}
-						} else {
-							res.json({
-								statusCode: 403,
-								data: { errorType: 'auth.invalidToken' }
-							})
-							return 403
-						}
-					} else {
-						res.json({
-							statusCode: 418,
-							data: {
-								errorType: 'paintboard.paintInCooldown',
-								message: `${Translator.translate(
-									'paintboard.paintInCooldown'
-								)}: ${
-									(this.server?.getConfig('paintboard.cooldown') -
-										Date.now() +
-										this.cooldownCache.get(uid)!) /
-									1000.0
-								}s left.`
-							}
-						})
-						return 418
-					}
-				} else {
-					res.json({
-						statusCode: 400,
-						data: { errorType: 'paintboard.illegalRequest' }
-					})
-					return 400
-				}
-			} else {
-				res.json({
-					statusCode: 400,
-					data: { errorType: 'paintboard.illegalRequest' }
-				})
-				return 400
-			}
-		} catch (err) {
-			this.server!.getLogger().error('Paintboard', err!.toString())
-			res.json({
-				statusCode: 500,
-				data: { errorType: 'unknown.internalServerError' }
-			})
-			return 500
-		}
-	}
+	// 移除paintReqHandler方法
 
+	// 保留getBoardReqHandler方法
 	public async getBoardReqHandler(
 		req: Request,
 		res: Response,
