@@ -1,46 +1,47 @@
 {
-  "name": "lsp-reforged",
-  "version": "1.0.0",
-  "description": "lspaintboard-reforged version!",
-  "main": "src/lsp-reforged/lsp-reforged.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "run": "node dist/lsp-reforged.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/lspaintboard-dev/LSP-Reforged.git"
-  },
-  "author": "liucang",
-  "license": "AGPL-3.0",
-  "type": "module",
-  "bugs": {
-    "url": "https://github.com/lspaintboard-dev/LSP-Reforged/issues"
-  },
-  "homepage": "https://github.com/lspaintboard-dev/LSP-Reforged#readme",
-  "dependencies": {
-    "@types/axios": "^0.14.0",
-    "@types/fs-extra": "^11.0.4",
-    "@types/js-yaml": "^4.0.9",
-    "@types/node": "^20.11.17",
-    "@types/uuid": "^10.0.0",
-    "@types/ws": "^8.5.12",
-    "axios": "^1.7.2",
-    "fs-extra": "^11.2.0",
-    "js-yaml": "^4.1.0",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
-    "ts-loader": "^9.5.1",
-    "typescript": "5.1",
-    "uuid": "^10.0.0",
-    "ws": "^8.18.0",
-    "@types/async": "^3.2.24",
-    "async": "^3.2.6"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  }
+	"name": "lsp-reforged",
+	"version": "1.0.0",
+	"description": "lspaintboard-reforged version!",
+	"main": "src/lsp-reforged/lsp-reforged.ts",
+	"scripts": {
+		"start": "bun run src/lsp-reforged/lsp-reforged.ts",
+		"dev": "bun run src/lsp-reforged/lsp-reforged.ts --hot"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/lspaintboard-dev/LSP-Reforged.git"
+	},
+	"author": "liucang",
+	"license": "AGPL-3.0",
+	"type": "module",
+	"bugs": {
+		"url": "https://github.com/lspaintboard-dev/LSP-Reforged/issues"
+	},
+	"homepage": "https://github.com/lspaintboard-dev/LSP-Reforged#readme",
+	"dependencies": {
+		"@types/async": "^3.2.24",
+		"@types/axios": "^0.14.0",
+		"@types/fs-extra": "^11.0.4",
+		"@types/js-yaml": "^4.0.9",
+		"@types/node": "^22.9.3",
+		"@types/uuid": "^10.0.0",
+		"@types/ws": "^8.5.12",
+		"async": "^3.2.6",
+		"axios": "^1.7.2",
+		"bindings": "^1.5.0",
+		"fs-extra": "^11.2.0",
+		"js-yaml": "^4.1.0",
+		"sqlite": "^5.1.1",
+		"sqlite3": "^5.1.7",
+		"ts-loader": "^9.5.1",
+		"typescript": "5.1",
+		"uuid": "^10.0.0",
+		"ws": "^8.18.0"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	}
 }
