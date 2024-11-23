@@ -428,7 +428,7 @@ export class PaintboardService implements Service {
 
 			this.server
 				?.getLogger()
-				.info(
+				.warn(
 					'Paintboard Stats',
 					`WS Paint Requests/sec: ${(this.wsRequestCount / elapsed).toFixed(
 						2
