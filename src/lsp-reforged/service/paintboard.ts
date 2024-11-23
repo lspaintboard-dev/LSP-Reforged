@@ -145,6 +145,12 @@ interface PaintQueueData {
 	color: number
 }
 
+interface PaintWSMessage {
+	clientId: WebSocket.WebSocket // 修改这里，使用 ws 包的 WebSocket 类型
+	type: number
+	data: Uint8Array
+}
+
 export class PaintboardService implements Service {
 	private server: Server | undefined
 	private cooldownCache: Map<number, number>
@@ -179,16 +185,96 @@ export class PaintboardService implements Service {
 			])
 			this.websocketServer?.clients.forEach(client => {
 				if (client.readyState === WebSocket.WebSocket.OPEN) {
+					// 修改这里
 					try {
 						client.send(broadcast!)
 					} catch (err) {
 						client.close()
 					}
 				} else if (client.readyState !== WebSocket.WebSocket.CONNECTING) {
+					// 修改这里
 					client.close()
 				}
 			})
 		})
+	}
+
+	private processWsMessage = async (msg: PaintWSMessage) => {
+		const { clientId, type, data } = msg
+
+		switch (type) {
+			case 0xfb: // pong
+				break
+
+			case 0xfe: {
+				// paint
+				const xPos = data[1] * 256 + data[0]
+				const yPos = data[3] * 256 + data[2]
+				const color = (data[4] << 16) + (data[5] << 8) + data[6]
+				const uid = (data[7] << 16) + (data[8] << 8) + data[9]
+				const token = Array.from(data.slice(10, 26))
+					.map(b => b.toString(16).padStart(2, '0'))
+					.join('')
+					.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5')
+				const id = data[26] + data[27] * 256
+
+				if (
+					xPos >= this.width ||
+					xPos < 0 ||
+					yPos >= this.height ||
+					yPos < 0 ||
+					!Number.isInteger(uid) ||
+					uid < 1
+				) {
+					clientId.send(
+						new Uint8Array([0xff, id % 256, Math.floor(id / 256), 0xec])
+					)
+					return
+				}
+
+				// Check cooldown & permissions
+				if (
+					!this.cooldownCache.has(uid) ||
+					Date.now() - this.cooldownCache.get(uid)! >= this.cooldown ||
+					this.server!.getPermissionService().hasPermission(
+						uid,
+						Permission.PERM_ROOT
+					)
+				) {
+					if (this.server!.getAuthService().authToken(uid, token)) {
+						if (
+							this.server!.getPermissionService().hasPermission(
+								uid,
+								Permission.PERM_PAINT
+							)
+						) {
+							this.paintboard.setPixel(xPos, yPos, color)
+							this.paintQueue.push({ xPos, yPos, color })
+							clientId.send(
+								new Uint8Array([0xff, id % 256, Math.floor(id / 256), 0xef])
+							)
+							this.cooldownCache.set(uid, Date.now())
+							return
+						} else {
+							clientId.send(
+								new Uint8Array([0xff, id % 256, Math.floor(id / 256), 0xeb])
+							)
+							return
+						}
+					} else {
+						clientId.send(
+							new Uint8Array([0xff, id % 256, Math.floor(id / 256), 0xed])
+						)
+						return
+					}
+				} else {
+					clientId.send(
+						new Uint8Array([0xff, id % 256, Math.floor(id / 256), 0xee])
+					)
+					return
+				}
+			}
+		}
 	}
 
 	public async onInitialize(
@@ -270,9 +356,13 @@ export class PaintboardService implements Service {
 						'Paintboard',
 						`paintboard.getWebsocketConnection: ${req.connection.remoteAddress}`
 					)
-				ws.on('message', (msg: any) => {
-					ws.close()
-					wsServer.clients.delete(ws)
+				ws.on('message', async msg => {
+					const data = new Uint8Array(msg as Buffer)
+					await this.processWsMessage({
+						clientId: ws,
+						type: data[0],
+						data: data.slice(1)
+					})
 				})
 				ws.on('close', function () {
 					wsServer.clients.delete(ws)
@@ -324,6 +414,15 @@ export class PaintboardService implements Service {
 			this.paintReqPerSec = 0
 			this.bandSpeed = 0
 		}, 1000)
+
+		setInterval(() => {
+			this.websocketServer?.clients.forEach(client => {
+				if (client.readyState === WebSocket.WebSocket.OPEN) {
+					// 修改这里
+					client.send(new Uint8Array([0xfc]))
+				}
+			})
+		}, 30000)
 	}
 
 	public async paintReqHandler(
