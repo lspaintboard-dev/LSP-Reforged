@@ -78,12 +78,18 @@
                 <div class="am-u-lg-11" id="canvas-box">
                     <canvas width=5000 height=3000 id='mycanvas'>
                     </canvas>
+                    <canvas width=5000 height=3000 id='heatmap' style="position: absolute; top: 0; left: 0; pointer-events: none;">
+                    </canvas>
                 </div>
                 <div class="am-u-lg-7" id='palette'><span>选色</span><input type="color" id="select-color"></div>
                 <div class="am-u-lg-5" id='zoom-tool'>
                     <button type="button" class="am-btn am-btn-primary am-radius" zoom=1>全部显示</button>
                     <button type="button" class="am-btn am-btn-secondary am-radius" zoom=5>放大5x</button>
                     <button type="button" class="am-btn am-btn-success am-radius" zoom=10>放大10x</button>
+                    <button type="button" class="am-btn am-btn-warning am-radius" id="heatmap-toggle">切换热力图</button>
+                    <p>
+                        当前坐标: (<span id="current-x">0</span>, <span id="current-y">0</span>)
+                    </p>
                     <div style="display: inline-flex;margin: 1em 0; width: 100%;">
                         <input type="number"
                                style="height:37.1593px; font-family: monospace; flex: 1; font-size: .875em;"
@@ -164,6 +170,103 @@
         ctx.fillRect(x * 5, y * 5, 5, 5);
     }
 
+    let heatmapEnabled = false;
+    const heatPoints = new Map(); // 存储热力点，键为"x,y"，值为时间戳
+    let heatmapAnimationFrame = null; // 用于取消动画帧
+
+    // 优化后的热力图渲染函数
+    function renderHeatmap() {
+        if (!heatmapEnabled) return;
+        
+        const canvas = document.getElementById('heatmap');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const now = Date.now();
+        const expiredKeys = [];
+        
+        // 批量处理点的渲染
+        ctx.beginPath();
+        for (const [key, timestamp] of heatPoints.entries()) {
+            const age = (now - timestamp) / 1000;
+            if (age >= 5) {
+                expiredKeys.push(key);
+                continue;
+            }
+            
+            const [x, y] = key.split(',').map(Number);
+            const alpha = 1 - (age / 5);
+            ctx.fillStyle = `rgba(255, 0, 0, ${alpha})`;
+            ctx.fillRect(x * scale, y * scale, scale, scale);
+        }
+        
+        // 批量删除过期的点
+        expiredKeys.forEach(key => heatPoints.delete(key));
+        
+        // 只有在热力图启用时才继续动画
+        if (heatmapEnabled) {
+            heatmapAnimationFrame = requestAnimationFrame(renderHeatmap);
+        }
+    }
+
+    // 修改热力图切换按钮事件
+    $('#heatmap-toggle').click(function() {
+        heatmapEnabled = !heatmapEnabled;
+        const canvas = document.getElementById('mycanvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (heatmapEnabled) {
+            ctx.filter = 'brightness(0.7)';
+            render(myarr);
+            // 启动热力图渲染
+            heatmapAnimationFrame = requestAnimationFrame(renderHeatmap);
+        } else {
+            ctx.filter = 'none';
+            render(myarr);
+            // 停止热力图渲染并清除画布
+            if (heatmapAnimationFrame) {
+                cancelAnimationFrame(heatmapAnimationFrame);
+                heatmapAnimationFrame = null;
+            }
+            const heatmap = document.getElementById('heatmap');
+            const heatCtx = heatmap.getContext('2d');
+            heatCtx.clearRect(0, 0, heatmap.width, heatmap.height);
+        }
+    });
+
+    var myarr = [];
+    for (var i = 0; i < H; i++) {
+        myarr[i] = [];
+        for (var j = 0; j < W; j++) {
+            myarr[i][j] = '#dddddd';
+        }
+    }
+
+    function render(arr) {
+        var c = document.getElementById("mycanvas");
+        var ctx = c.getContext("2d");
+        for (var i = 0; i < H; i++) {
+            for (var j = 0; j < W; j++) {
+                ctx.fillStyle = arr[i][j];
+                ctx.fillRect(j * scale, i * scale, scale, scale);
+            }
+        }
+
+    }
+
+    function update(y, x, color, t = false) {
+        if (dragged) {
+            dragged = 0;
+            return;
+        }
+        //alert('ss');
+        var c = document.getElementById("mycanvas");
+        var ctx = c.getContext("2d");
+        ctx.fillStyle = color;
+        if(!t) myarr[y][x] = color;
+        ctx.fillRect(x * 5, y * 5, 5, 5);
+    }
+
     zoom = function (s) {
         scale = s;
         $('#mycanvas').width(W * scale)
@@ -188,16 +291,15 @@
     let paintCb = new Map();
     
     function connectWs() {
-        try {
-            ws = new WebSocket('wss://paintboard.ayakacraft.com:40002/api/paintboard/ws');
-        } catch (e) {
-            alert("无法连接服务器");
-            return;
-        }
+        ws = new WebSocket('wss://paintboard.ayakacraft.com:40002/api/paintboard/ws');
         ws.binaryType = "arraybuffer";
         
         ws.onopen = function() {
             initialPaint();
+        };
+
+        ws.onerror = function(event) {
+            console.error(event);
         };
 
         ws.onmessage = function(event) {
@@ -214,6 +316,11 @@
                     update(y, x, "#" + colorR.toString(16).padStart(2,'0') + 
                                  colorG.toString(16).padStart(2,'0') + 
                                  colorB.toString(16).padStart(2,'0'));
+                    
+                    // 添加热力点时进行节流
+                    if (heatmapEnabled) {
+                        heatPoints.set(`${x},${y}`, Date.now());
+                    }
                     break;
                 }
                 case 0xfc: { // ping
@@ -290,10 +397,10 @@
                     getCountDown(lasttime + timelimit);
                     break;
                 case 0xee:
-                    alert("Token正在冷却");
+                    alert("Token 正在冷却");
                     break;
                 case 0xed:
-                    alert("Token无效");
+                    alert("Token 无效");
                     break;
                 case 0xec:
                     alert("请求格式错误");
@@ -315,6 +422,10 @@
         x = Math.min(x, W-1);
         y = Math.min(y, H-1);
 
+        // 更新坐标显示
+        document.getElementById('current-x').textContent = x;
+        document.getElementById('current-y').textContent = y;
+
         if(nowX != x || nowY != y) {
             update(y, x, nowColor, true);
             update(nowY, nowX, myarr[nowY][nowX]);
@@ -322,6 +433,7 @@
             nowX = x;
         }
     })
+
     $('#reset-token').bind("click", function () {
         $.ajax({
             type: 'POST',
@@ -346,13 +458,19 @@
         cursor: "move",
         stop: function () {
             dragged = 1;
+        },
+        drag: function(event, ui) {
+            $('#heatmap').css({
+                'top': ui.position.top,
+                'left': ui.position.left
+            });
         }
     });
     $('#mycanvas').bind("mousewheel", function (event) {
         var delta = event.originalEvent.deltaY;
         var y = parseInt(event.offsetY / scale);
         var x = parseInt(event.offsetX / scale);
-        console.log(event);
+        // console.log(event);
         if (delta > 0) {
             if (scale == 10)
                 zoom(5);
@@ -367,6 +485,8 @@
         if (scale != 1) {
             $('#mycanvas').css('top', -y * scale + H / 2);
             $('#mycanvas').css('left', -x * scale + W / 2);
+            $('#heatmap').css('top', -y * scale + H / 2);
+            $('#heatmap').css('left', -x * scale + W / 2);
         }
         scale
         return false;
