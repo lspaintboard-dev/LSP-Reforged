@@ -291,7 +291,7 @@
     let paintCb = new Map();
     
     function connectWs() {
-        ws = new WebSocket('wss://paintboard.ayakacraft.com:40002/api/paintboard/ws');
+        ws = new WebSocket('wss://api.paintboard.ayakacraft.com:40002/api/paintboard/ws');
         ws.binaryType = "arraybuffer";
         
         ws.onopen = function() {
