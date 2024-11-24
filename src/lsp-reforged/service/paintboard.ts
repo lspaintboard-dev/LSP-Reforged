@@ -479,7 +479,9 @@ export class PaintboardService implements Service {
         // 添加计算防抖定时器
         if(this.server.getConfig('paintboard.debounceInterval') != -1){
             setInterval(
-                this.calcBoardModification, 
+                () => {
+                    this.calcBoardModification.apply(this);
+                }, 
                 this.server.getConfig('paintboard.debounceInterval')
             );
         }
