@@ -27,4 +27,4 @@ paintboard:
   activityStartTimestamp: 0
   activityEndTimestamp: 1738252800
   cooldown: 1
-  resetBoard: false
+  debounceInterval: 20 # 设置为 -1 则不开启

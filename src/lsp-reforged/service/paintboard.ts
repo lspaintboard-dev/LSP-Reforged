@@ -131,9 +131,13 @@ class PaintBoard {
 	}
 }
 
+interface Coordinate {
+    x: number
+    y: number
+}
+
 interface PaintQueueData {
-	xPos: number
-	yPos: number
+	pos: Coordinate
 	color: number
 }
 
@@ -158,6 +162,10 @@ export class PaintboardService implements Service {
 	private bandSpeed: number = 0
 	private paintQueue: async.QueueObject<PaintQueueData>
 
+    // 添加防抖计算
+    private paintMap: Map<Coordinate, PaintQueueData>
+    private lastPaintMap: Map<Coordinate, PaintQueueData>
+
 	// 添加统计计数器
 	private wsRequestCount: number = 0
 	private wsSuccessCount: number = 0
@@ -167,9 +175,11 @@ export class PaintboardService implements Service {
 	constructor() {
 		this.cooldownCache = new Map<number, number>()
 		this.paintboard = new PaintBoard(0, 0, false)
+        this.paintMap = new Map<Coordinate, PaintQueueData>()
+        this.lastPaintMap = new Map<Coordinate, PaintQueueData>()
 		this.paintQueue = async.queue(async (data: PaintQueueData) => {
-			const xPos: number = data.xPos
-			const yPos: number = data.yPos
+			const xPos: number = data.pos.x
+			const yPos: number = data.pos.y
 			const color: number = data.color
 			const broadcast: Uint8Array | null = new Uint8Array([
 				0xfa,
@@ -194,6 +204,19 @@ export class PaintboardService implements Service {
 			})
 		})
 	}
+
+    private calcBoardModification() {
+        this.paintMap.forEach((data: PaintQueueData, coordinate: Coordinate) => {
+            if(
+                !this.lastPaintMap.has(coordinate) || 
+                this.lastPaintMap.get(coordinate) != data
+            ) {
+                this.paintQueue.push(data)
+                this.lastPaintMap.set(coordinate, data)
+            }
+        })
+        this.paintMap.clear()
+    }
 
 	private processWsMessage = async (msg: PaintWSMessage) => {
 		const { clientId, type, data } = msg
@@ -248,7 +271,16 @@ export class PaintboardService implements Service {
 						) {
 							this.wsSuccessCount++ // 增加成功计数
 							this.paintboard.setPixel(xPos, yPos, color)
-							this.paintQueue.push({ xPos, yPos, color })
+                            // 修改发送队列登记方法
+                            if (this.server!.getConfig('paintboard.debounceInterval') == -1) {
+                                this.paintQueue.push({ pos: {x: xPos, y: yPos}, color })
+                            }
+                            else {
+                                this.paintMap.set(
+                                    {x: xPos, y: yPos}, 
+                                    { pos: {x: xPos, y: yPos}, color }
+                                );
+                            }
 							clientId.send(
 								new Uint8Array([0xff, id % 256, Math.floor(id / 256), 0xef])
 							)
@@ -443,6 +475,14 @@ export class PaintboardService implements Service {
 			this.getBoardCount = 0
 			this.lastStatsTime = now
 		}, 5000)
+
+        // 添加计算防抖定时器
+        if(this.server.getConfig('paintboard.debounceInterval') != -1){
+            setInterval(
+                this.calcBoardModification, 
+                this.server.getConfig('paintboard.debounceInterval')
+            );
+        }
 	}
 
 	// 移除paintReqHandler方法
